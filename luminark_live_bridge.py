@@ -91,6 +91,65 @@ class GovernanceResult:
     diagnoses:      List[SAPDiagnosis]         = field(default_factory=list)
     total_elapsed_s: float = 0.0
 
+    # ── Convenience properties ─────────────────────────────────────────────
+
+    @property
+    def v_history(self) -> List[float]:
+        """Lyapunov V value at each iteration — for dV/dt monitoring."""
+        return [entry.get("V", 0.0) for entry in self.audit_trail]
+
+    @property
+    def stage_history(self) -> List[int]:
+        """SAP stage at each iteration — for trajectory plotting."""
+        return [entry.get("sap_stage", 0) for entry in self.audit_trail]
+
+    # ── Serialisation ──────────────────────────────────────────────────────
+
+    def to_dict(self) -> dict:
+        """
+        Return a fully JSON-serialisable dict.
+        Enums are converted to their string values.
+        Nested dataclasses are flattened via dataclasses.asdict().
+        """
+        from dataclasses import asdict as _asdict
+
+        final_report_dict = None
+        if self.final_report is not None:
+            final_report_dict = {
+                "passed":   self.final_report.passed,
+                "V":        self.final_report.V,
+                "action":   self.final_report.action,
+                "entropy":  self.final_report.entropy,
+                "energy":   self.final_report.energy,
+                "velocity": self.final_report.velocity,
+                "message":  self.final_report.message,
+            }
+
+        diagnoses_list = [
+            {
+                "stage":          d.stage,
+                "stage_name":     d.stage_name,
+                "error_class":    d.error_class,
+                "error_message":  d.error_message,
+                "surgical_prompt": d.surgical_prompt,
+                "confidence":     d.confidence,
+                "urgency":        d.urgency,
+            }
+            for d in self.diagnoses
+        ]
+
+        return {
+            "verdict":         self.verdict.value,
+            "final_code":      self.final_code,
+            "iterations":      self.iterations,
+            "audit_trail":     self.audit_trail,
+            "final_report":    final_report_dict,
+            "diagnoses":       diagnoses_list,
+            "total_elapsed_s": self.total_elapsed_s,
+            "v_history":       self.v_history,
+            "stage_history":   self.stage_history,
+        }
+
     def summary(self) -> str:
         lines = [
             f"Governance Verdict: {self.verdict.value}",

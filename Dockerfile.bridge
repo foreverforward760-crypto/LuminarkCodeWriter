@@ -1,0 +1,38 @@
+FROM python:3.11-slim
+
+LABEL maintainer="Richard Stanfield <LuminarkMeridian@gmail.com>"
+LABEL description="LUMINARK Live Bridge – FastAPI governance service with Redis telemetry"
+
+WORKDIR /app
+
+# Install Docker CLI so the bridge can spawn sandbox containers via DooD
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends docker.io && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+RUN pip install --no-cache-dir \
+    fastapi==0.115.0 \
+    uvicorn[standard]==0.30.6 \
+    redis==5.0.8 \
+    docker==7.1.0 \
+    pydantic==2.9.2 \
+    numpy==1.26.4
+
+# Copy SAP engine modules
+COPY sap_geometry_engine.py       .
+COPY sap_constrained_bayesian.py  .
+COPY sap_lyapunov.py              .
+COPY sap_stage_classifier.py      .
+COPY luminark_live_bridge.py      .
+
+# Copy FastAPI application entry point
+COPY main.py .
+
+EXPOSE 8080
+
+# NOTE: Docker socket security trade-off
+# Mounting /var/run/docker.sock gives this container root-equivalent
+# access to the host Docker daemon. Acceptable for research/internal
+# use. For multi-tenant production: use Kubernetes or Nomad instead.
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--log-level", "info"]

@@ -76,22 +76,36 @@ services:
     restart: unless-stopped
 
   # ── Bridge service: the LuminarkLiveBridge orchestrator ─────────────────
-  # Uncomment and add a FastAPI wrapper to expose governance as an HTTP API
+  # Exposes the governance loop as an HTTP API with Redis telemetry.
   #
-  # bridge:
-  #   build:
-  #     context:    .
-  #     dockerfile: Dockerfile.bridge
-  #   ports:
-  #     - "8080:8080"
-  #   environment:
-  #     - REDIS_URL=redis://redis:6379
-  #     - LUMINARK_DOCKER_IMAGE=luminark-sandbox:latest
-  #     - LUMINARK_MAX_ITERATIONS=3
-  #   depends_on:
-  #     redis:
-  #       condition: service_healthy
-  #   restart: unless-stopped
+  # SECURITY NOTE (Docker-out-of-Docker):
+  # Mounting /var/run/docker.sock gives this container root-equivalent access
+  # to the host Docker daemon. Acceptable for research/internal use.
+  # For multi-tenant production: migrate to Kubernetes or Nomad.
+  bridge:
+    build:
+      context:    .
+      dockerfile: Dockerfile.bridge
+    image: luminark-bridge:latest
+    container_name: luminark_bridge
+    ports:
+      - "8080:8080"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - LUMINARK_DOCKER_IMAGE=luminark-sandbox:latest
+      - LUMINARK_MAX_ITERATIONS=3
+      - LUMINARK_MODE=docker
+      - LUMINARK_STABILITY_THRESHOLD=3.0
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # DooD: bridge spawns sibling sandbox containers via host Docker daemon
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - default
 
 volumes:
   redis_data:

@@ -177,6 +177,18 @@ class StabilityReport:
     velocity:    float
     message:     str
 
+    def to_dict(self) -> dict:
+        """Return a JSON-serialisable dict of this stability report."""
+        return {
+            "passed":   self.passed,
+            "V":        self.V,
+            "action":   self.action,
+            "entropy":  self.entropy,
+            "energy":   self.energy,
+            "velocity": self.velocity,
+            "message":  self.message,
+        }
+
     def __str__(self) -> str:
         status = "✅ STABLE" if self.passed else "❌ UNSTABLE"
         return (f"{status} | V={self.V:.4f} | action={self.action} | "
