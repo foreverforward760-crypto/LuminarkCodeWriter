@@ -1,0 +1,102 @@
+version: "3.9"
+
+# LUMINARK Active Governance Layer – Docker Compose
+#
+# Services:
+#   sandbox   — Python 3.11-slim crucible for governed code execution
+#   redis     — telemetry store for Lyapunov V-series, audit trails, stage history
+#
+# Usage:
+#   docker-compose up --build          # start all services
+#   docker-compose run sandbox python task.py  # run a task in the crucible
+
+services:
+
+  # ── The Crucible: sandboxed Python execution environment ─────────────────
+  sandbox:
+    build:
+      context:    .
+      dockerfile: Dockerfile
+    image: luminark-sandbox:latest
+    container_name: luminark_sandbox
+
+    # Network isolation — the sandbox has NO internet access
+    network_mode: none
+
+    # Resource constraints (cgroup level, complementing ulimits in entrypoint.sh)
+    deploy:
+      resources:
+        limits:
+          cpus:   "0.50"
+          memory: "256M"
+        reservations:
+          memory: "64M"
+
+    # Security hardening
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+
+    # Mount point for task files (host provides task.py at runtime)
+    volumes:
+      - type:   bind
+        source: ./workspace
+        target: /workspace
+        read_only: false
+
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - LUMINARK_MODE=sandbox
+
+    restart: "no"   # sandbox is ephemeral — never auto-restart
+
+  # ── Redis: telemetry store for SAP stage history and Lyapunov V-series ───
+  redis:
+    image: redis:7-alpine
+    container_name: luminark_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfilename luminark_telemetry.aof
+      --maxmemory 128mb
+      --maxmemory-policy allkeys-lru
+      --loglevel warning
+    healthcheck:
+      test:     ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout:  5s
+      retries:  3
+    restart: unless-stopped
+
+  # ── Bridge service: the LuminarkLiveBridge orchestrator ─────────────────
+  # Uncomment and add a FastAPI wrapper to expose governance as an HTTP API
+  #
+  # bridge:
+  #   build:
+  #     context:    .
+  #     dockerfile: Dockerfile.bridge
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     - REDIS_URL=redis://redis:6379
+  #     - LUMINARK_DOCKER_IMAGE=luminark-sandbox:latest
+  #     - LUMINARK_MAX_ITERATIONS=3
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  default:
+    name: luminark_net

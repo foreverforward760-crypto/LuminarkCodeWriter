@@ -1,0 +1,67 @@
+# LUMINARK CodeWriter — .gitignore
+
+# Hypothesis test database
+.hypothesis/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env
+
+# Environment / secrets
+.env
+.env.*
+*.env
+secrets.json
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
+*.whl
+*.tar.gz
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Mypy
+.mypy_cache/
+
+# Ruff
+.ruff_cache/
+
+# Docker volumes
+workspace/
+
+# Logs
+*.log
+luminark_*.log
+
+# Temporary execution files
+luminark_exec_*.py
+luminark_local_*.py
+
+# Redis dump
+dump.rdb
