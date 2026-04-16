@@ -1,0 +1,51 @@
+version: 2
+updates:
+  # Python dependencies
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 5
+    reviewers:
+      - foreverforward760-crypto
+    labels:
+      - dependencies
+      - python
+    commit-message:
+      prefix: "chore(deps)"
+    ignore:
+      # Pin numpy to <2.0 — breaking changes in 2.x
+      - dependency-name: numpy
+        versions: [">=2.0"]
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: "chore(actions)"
+
+  # Docker base images
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/New_York
+    labels:
+      - dependencies
+      - docker
+    commit-message:
+      prefix: "chore(docker)"

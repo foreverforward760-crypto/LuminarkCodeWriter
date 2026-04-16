@@ -1,0 +1,61 @@
+# luminark_prototype_config.yaml
+# LUMINARK Active Governance Layer — Prototype Configuration
+# Meridian Axiom Alignment Technologies (MAAT)
+#
+# All values here are overridable via environment variables.
+# Environment variables take precedence over this file.
+
+# ── Governance Engine ─────────────────────────────────────────────────────────
+governance:
+  max_iterations:       3         # max repair attempts before FAIL_EXHAUSTED
+  stability_threshold:  3.0       # Lyapunov V threshold for PASS
+  intervention_threshold: 5.0     # V threshold for CRITICAL escalation
+  sandbox_timeout:      30        # execution timeout in seconds
+
+# ── Execution Mode ────────────────────────────────────────────────────────────
+execution:
+  mode:         docker            # docker | local
+  docker_image: luminark-sandbox:latest
+  memory_limit: 256m
+  cpu_limit:    "0.5"
+  pids_limit:   64
+  network:      none              # sandbox has no network access
+
+# ── Lyapunov Controller ───────────────────────────────────────────────────────
+lyapunov:
+  w_H: 1.0    # entropy weight
+  w_E: 2.0    # energy weight
+  w_v: 0.5    # velocity² weight
+  # Action thresholds
+  hold_threshold:       2.0
+  dampen_threshold:     5.0
+  # Above dampen_threshold → INTERVENE
+
+# ── SAP Bayesian ──────────────────────────────────────────────────────────────
+bayesian:
+  temperature: 0.5    # softmax temperature
+  beta:        0.8    # trap energy modulation coefficient
+
+# ── Redis Telemetry ───────────────────────────────────────────────────────────
+redis:
+  url:             redis://redis:6379
+  ttl_seconds:     86400   # 24h retention for V-series and audit trails
+  max_history:     500     # max snapshots per context_id
+  key_prefix:      luminark
+
+# ── FastAPI Service ───────────────────────────────────────────────────────────
+api:
+  host:           0.0.0.0
+  port:           8080
+  log_level:      info
+  cors_origins:   ["*"]   # tighten to dashboard origin in production
+
+# ── SAP Stage Classifier ──────────────────────────────────────────────────────
+psychiatrist:
+  default_confidence: 0.50   # confidence when no pattern matches
+  fallback_stage:     3      # Stage 3 (The Engine) for unknown errors
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+logging:
+  level:  INFO
+  format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"

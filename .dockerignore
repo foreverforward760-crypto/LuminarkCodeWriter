@@ -1,0 +1,63 @@
+# .dockerignore – LUMINARK CodeWriter
+# Excludes files from Docker build context to keep images lean and secure.
+
+# Version control
+.git/
+.gitignore
+.github/
+
+# Python cache and build artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Test artifacts
+.pytest_cache/
+.hypothesis/
+.coverage
+coverage.xml
+htmlcov/
+*.log
+
+# Environment / secrets — never in the image
+.env
+.env.*
+secrets.json
+*.pem
+*.key
+
+# Development tooling
+.pre-commit-config.yaml
+Makefile
+.ruff_cache/
+.mypy_cache/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# Temporary execution files
+luminark_exec_*.py
+luminark_local_*.py
+workspace/
+
+# Redis dump
+dump.rdb
