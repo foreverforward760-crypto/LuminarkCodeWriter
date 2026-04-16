@@ -4,7 +4,7 @@
 # Build:  docker build -t luminark-sandbox:latest .
 # Run:    docker run --rm --network none --memory 256m --cpus 0.5 luminark-sandbox:latest python task.py
 
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 # Security: create a non-root user to run all code
 RUN groupadd --gid 1001 luminark \
