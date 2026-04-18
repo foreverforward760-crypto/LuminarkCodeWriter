@@ -26,9 +26,7 @@ Error→Stage mapping rationale:
 """
 
 import re
-from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Tuple
-
+from dataclasses import dataclass
 
 # ── Diagnosis dataclass ───────────────────────────────────────────────────────
 
@@ -54,7 +52,7 @@ class SAPDiagnosis:
 
 # ── Error pattern registry ────────────────────────────────────────────────────
 
-_STAGE_PATTERNS: List[Dict] = [
+_STAGE_PATTERNS: list[dict] = [
     # Stage 9 first — most critical, must be checked before generic RuntimeError
     {
         "stage": 9, "stage_name": "The Transparency",
@@ -274,7 +272,7 @@ class SAPPsychiatrist:
             urgency        = stage_entry["urgency"],
         )
 
-    def _match_stage(self, text: str) -> Tuple[Dict, float]:
+    def _match_stage(self, text: str) -> tuple[dict, float]:
         """Find the best-matching stage entry for the given error text."""
         text_lower = text.lower()
         for entry in self._patterns:
@@ -304,7 +302,7 @@ class SAPPsychiatrist:
             return match.group(1)
         return "package_name"
 
-    def batch_diagnose(self, failures: List[Dict]) -> List[SAPDiagnosis]:
+    def batch_diagnose(self, failures: list[dict]) -> list[SAPDiagnosis]:
         """
         Diagnose a batch of failures from test output.
         Each item: {"error_class": str, "error_message": str, "function": str}

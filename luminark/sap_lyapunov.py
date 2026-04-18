@@ -20,11 +20,9 @@ Classes:
   NumericalConstitution     – stability certificate: passes/fails governance check
 """
 
-import math
-import numpy as np
 from dataclasses import dataclass
-from typing import List, Dict, Optional, Tuple
 
+import numpy as np
 
 # ── Lyapunov Controller ───────────────────────────────────────────────────────
 
@@ -43,13 +41,15 @@ class LyapunovController:
         self.w_E = w_E
         self.w_v = w_v
 
-    def V(self, entropy: float, energy: float, velocity: float) -> float:
+    def V(self, entropy: float, energy: float, velocity: float) -> float:  # noqa: N802
         """Compute Lyapunov function value. V ≥ 0."""
         return self.w_H * entropy + self.w_E * energy + self.w_v * (velocity ** 2)
 
-    def dV(self,
+    def dV(  # noqa: N802
+        self,
            entropy_before: float, energy_before: float, velocity_before: float,
-           entropy_after:  float, energy_after:  float, velocity_after:  float) -> float:
+           entropy_after:  float, energy_after:  float, velocity_after:  float,
+    ) -> float:  # noqa: N802
         """
         Compute dV = V_after - V_before.
         Negative value = system moving toward equilibrium (good).
@@ -60,7 +60,8 @@ class LyapunovController:
 
     def lyapunov_decrease(self,
                           entropy_before: float, energy_before: float, velocity_before: float,
-                          entropy_after:  float, energy_after:  float, velocity_after:  float) -> float:
+                          entropy_after:  float, energy_after:  float, velocity_after:  float,
+    ) -> float:  # noqa: N802
         """Alias: positive = V decreased (stabilising); negative = V increased (diverging)."""
         return -self.dV(entropy_before, energy_before, velocity_before,
                         entropy_after,  energy_after,  velocity_after)
@@ -105,7 +106,7 @@ class LyapunovVulnerabilityScanner:
         self.controller = LyapunovController(w_H=w_H, w_E=w_E, w_v=w_v)
         self.instability_threshold = instability_threshold
 
-    def _row_to_lyapunov_inputs(self, row: np.ndarray, velocity: float) -> Tuple[float, float, float]:
+    def _row_to_lyapunov_inputs(self, row: np.ndarray, velocity: float) -> tuple[float, float, float]:
         """
         Map a 5D NSDT row to (entropy_proxy, energy_proxy, velocity).
         entropy_proxy: std of normalised values (information disorder proxy)
@@ -116,7 +117,7 @@ class LyapunovVulnerabilityScanner:
         energy_proxy  = float((row_norm[2] + (1.0 - row_norm[3])) / 2.0)
         return entropy_proxy, energy_proxy, velocity
 
-    def scan_code_path(self, trace: np.ndarray, timestamps: np.ndarray) -> Dict:
+    def scan_code_path(self, trace: np.ndarray, timestamps: np.ndarray) -> dict:
         """
         Scan a trace for instability windows (dV/dt > threshold).
 
@@ -129,9 +130,9 @@ class LyapunovVulnerabilityScanner:
             return {"vulnerabilities": [], "v_series": [],
                     "instability_count": 0, "error": "trace must be (N, 5)"}
 
-        v_series: List[float] = []
-        vulnerabilities: List[Dict] = []
-        prev_v: Optional[float] = None
+        v_series: list[float] = []
+        vulnerabilities: list[dict] = []
+        prev_v: float | None = None
 
         for i in range(len(trace)):
             row = trace[i, :5]
@@ -205,7 +206,7 @@ class NumericalConstitution:
     accepted. Failure triggers escalation to the SAPPsychiatrist.
     """
 
-    def __init__(self, controller: Optional[LyapunovController] = None,
+    def __init__(self, controller: LyapunovController | None = None,
                  stability_threshold: float = 3.0,
                  intervention_threshold: float = 5.0):
         self.controller             = controller or LyapunovController()
@@ -222,11 +223,11 @@ class NumericalConstitution:
         """
         V      = self.controller.V(entropy, energy, velocity)
         action = self.controller.recommend_action(entropy, energy, velocity)
-        passed = V < self.stability_threshold
+        passed = self.stability_threshold > V
 
         if passed:
             message = "System within constitutional stability bounds."
-        elif V < self.intervention_threshold:
+        elif self.intervention_threshold > V:
             message = ("V exceeds stability threshold — DAMPEN required. "
                        "Escalate to SAPPsychiatrist for surgical prompt.")
         else:

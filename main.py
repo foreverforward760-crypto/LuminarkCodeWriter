@@ -25,12 +25,10 @@ Start:
   uvicorn main:app --host 0.0.0.0 --port 8080
 """
 
-import os
 import json
 import logging
-import time
+import os
 from contextlib import asynccontextmanager
-from typing import Optional
 
 import redis
 from fastapi import FastAPI, HTTPException
@@ -38,9 +36,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from luminark_live_bridge import (
-    LuminarkLiveBridge,
     ExecutionMode,
-    GovernanceVerdict,
+    LuminarkLiveBridge,
 )
 
 logger = logging.getLogger(__name__)
@@ -79,7 +76,7 @@ def _get_redis() -> redis.Redis:
 
 # ── Bridge singleton ──────────────────────────────────────────────────────────
 
-_bridge: Optional[LuminarkLiveBridge] = None
+_bridge: LuminarkLiveBridge | None = None
 
 
 def _get_bridge() -> LuminarkLiveBridge:
@@ -134,7 +131,7 @@ class GovernRequest(BaseModel):
     code:             str  = Field(..., description="Python source code to govern")
     task_description: str  = Field("",  description="Human-readable task description")
     context_id:       str  = Field("default", description="ID for telemetry grouping")
-    prev_stage:       Optional[int] = Field(None, ge=0, le=9)
+    prev_stage:       int | None = Field(None, ge=0, le=9)
 
 
 class StageReportRequest(BaseModel):
@@ -144,7 +141,7 @@ class StageReportRequest(BaseModel):
 
 # ── Telemetry helper ──────────────────────────────────────────────────────────
 
-def _persist_telemetry(r: Optional[redis.Redis], context_id: str, result_dict: dict):
+def _persist_telemetry(r: redis.Redis | None, context_id: str, result_dict: dict):
     """
     Write governance result to Redis.
 
@@ -209,7 +206,7 @@ def govern(request: GovernRequest):
         )
     except Exception as exc:
         logger.error(f"Bridge govern() raised: {exc}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Governance error: {exc}")
+        raise HTTPException(status_code=500, detail=f"Governance error: {exc}") from exc
 
     result_dict = result.to_dict()
     _persist_telemetry(r, request.context_id, result_dict)
@@ -239,7 +236,7 @@ def stage_report(request: StageReportRequest):
         report = bridge.get_stage_report(request.code)
     except Exception as exc:
         logger.error(f"stage_report error: {exc}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Stage report error: {exc}")
+        raise HTTPException(status_code=500, detail=f"Stage report error: {exc}") from exc
 
     return {
         "context_id": request.context_id,
@@ -295,14 +292,14 @@ def get_telemetry(context_id: str, limit: int = 50):
         }
     except Exception as exc:
         logger.error(f"Telemetry read failed: {exc}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Telemetry read error: {exc}")
+        raise HTTPException(status_code=500, detail=f"Telemetry read error: {exc}") from exc
 
 
 @app.get("/health")
 def health():
     """Liveness check — confirms bridge and Redis status."""
     r      = _get_redis()
-    bridge = _get_bridge()
+    _get_bridge()
     return {
         "status":       "ok",
         "service":      "LUMINARK Live Bridge",

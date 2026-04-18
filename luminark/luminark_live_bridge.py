@@ -20,25 +20,22 @@ The Docker mode is the "Crucible": resource-constrained, network-isolated,
 and ephemeral. No code that hasn't passed the Numerical Constitution leaves it.
 """
 
+import contextlib
+import logging
 import os
 import re
-import sys
-import json
-import time
-import logging
 import subprocess
+import sys
 import tempfile
-import traceback
+import time
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Optional, List, Dict, Any
+from enum import StrEnum
+from typing import Any
 
-import numpy as np
-
-from sap_geometry_engine import SAPGeometry, STAGE_METADATA
-from sap_constrained_bayesian import SAPConstrainedBayesian, SAPEnergy
+from sap_constrained_bayesian import SAPConstrainedBayesian
+from sap_geometry_engine import STAGE_METADATA
 from sap_lyapunov import LyapunovController, NumericalConstitution, StabilityReport
-from sap_stage_classifier import SAPPsychiatrist, SAPDiagnosis
+from sap_stage_classifier import SAPDiagnosis, SAPPsychiatrist
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -49,12 +46,12 @@ logging.basicConfig(
 
 # ── Enums and config ──────────────────────────────────────────────────────────
 
-class ExecutionMode(str, Enum):
+class ExecutionMode(StrEnum):
     DOCKER = "docker"
     LOCAL  = "local"
 
 
-class GovernanceVerdict(str, Enum):
+class GovernanceVerdict(StrEnum):
     PASS            = "PASS"
     FAIL_REPAIRED   = "FAIL_REPAIRED"
     FAIL_EXHAUSTED  = "FAIL_EXHAUSTED"
@@ -86,20 +83,20 @@ class GovernanceResult:
     verdict:        GovernanceVerdict
     final_code:     str
     iterations:     int
-    audit_trail:    List[Dict]       = field(default_factory=list)
-    final_report:   Optional[StabilityReport] = None
-    diagnoses:      List[SAPDiagnosis]         = field(default_factory=list)
+    audit_trail:    list[dict]       = field(default_factory=list)
+    final_report:   StabilityReport | None = None
+    diagnoses:      list[SAPDiagnosis]         = field(default_factory=list)
     total_elapsed_s: float = 0.0
 
     # ── Convenience properties ─────────────────────────────────────────────
 
     @property
-    def v_history(self) -> List[float]:
+    def v_history(self) -> list[float]:
         """Lyapunov V value at each iteration — for dV/dt monitoring."""
         return [entry.get("V", 0.0) for entry in self.audit_trail]
 
     @property
-    def stage_history(self) -> List[int]:
+    def stage_history(self) -> list[int]:
         """SAP stage at each iteration — for trajectory plotting."""
         return [entry.get("sap_stage", 0) for entry in self.audit_trail]
 
@@ -111,7 +108,6 @@ class GovernanceResult:
         Enums are converted to their string values.
         Nested dataclasses are flattened via dataclasses.asdict().
         """
-        from dataclasses import asdict as _asdict
 
         final_report_dict = None
         if self.final_report is not None:
@@ -168,7 +164,7 @@ class GovernanceResult:
 # ── NSDT extractor ────────────────────────────────────────────────────────────
 
 def _extract_nsdt_from_execution(result: ExecutionResult,
-                                  code: str) -> List[float]:
+                                  code: str) -> list[float]:
     """
     Heuristically derive an NSDT vector from an execution result.
 
@@ -250,7 +246,7 @@ class LuminarkLiveBridge:
     # ── Public API ─────────────────────────────────────────────────────────
 
     def govern(self, code: str, task_description: str = "",
-               prev_stage: Optional[int] = None) -> GovernanceResult:
+               prev_stage: int | None = None) -> GovernanceResult:
         """
         Full governance loop for a piece of code.
 
@@ -427,10 +423,8 @@ class LuminarkLiveBridge:
             logger.warning("Docker not found — falling back to LOCAL execution mode")
             return self._execute_local(code)
         finally:
-            try:
+            with contextlib.suppress(OSError):
                 os.unlink(tmp_path)
-            except OSError:
-                pass
 
     def _execute_local(self, code: str) -> ExecutionResult:
         """
@@ -461,10 +455,8 @@ class LuminarkLiveBridge:
                 exit_code=124, elapsed_s=self.sandbox_timeout, timed_out=True,
             )
         finally:
-            try:
+            with contextlib.suppress(OSError):
                 os.unlink(tmp_path)
-            except OSError:
-                pass
 
     # ── Repair ─────────────────────────────────────────────────────────────
 
@@ -499,17 +491,21 @@ class LuminarkLiveBridge:
         # Heuristic repairs (applied when no LLM is configured)
 
         # Add try/except around bare code if there's an uncaught exception
-        if exec_result.stderr and "Traceback" in exec_result.stderr:
-            if "try:" not in code and "except" not in code:
-                indent = "    "
-                wrapped_lines = [indent + line for line in code.splitlines()]
-                repaired = (
-                    "import sys\ntry:\n" +
-                    "\n".join(wrapped_lines) +
-                    "\nexcept Exception as _e:\n"
-                    "    print(f'LUMINARK_REPAIR: {type(_e).__name__}: {_e}', file=sys.stderr)\n"
-                    "    raise\n"
-                )
+        if (
+            exec_result.stderr
+            and "Traceback" in exec_result.stderr
+            and "try:" not in code
+            and "except" not in code
+        ):
+            indent = "    "
+            wrapped_lines = [indent + line for line in code.splitlines()]
+            repaired = (
+                "import sys\ntry:\n" +
+                "\n".join(wrapped_lines) +
+                "\nexcept Exception as _e:\n"
+                "    print(f'LUMINARK_REPAIR: {type(_e).__name__}: {_e}', file=sys.stderr)\n"
+                "    raise\n"
+            )
 
         # Append the surgical prompt as a comment for LLM integration visibility
         repaired += f"\n\n# LUMINARK_SURGICAL_PROMPT: {surgical_prompt[:200]}\n"
@@ -535,7 +531,7 @@ class LuminarkLiveBridge:
         m = re.search(r'def\s+(\w+)\s*\(', code)
         return m.group(1) if m else "module_level"
 
-    def get_stage_report(self, code: str) -> Dict[str, Any]:
+    def get_stage_report(self, code: str) -> dict[str, Any]:
         """
         Quick SAP stage report for a piece of code without full governance.
         Useful for dashboard / monitoring.

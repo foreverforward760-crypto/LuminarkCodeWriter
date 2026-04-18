@@ -26,12 +26,12 @@ Exit codes:
     3  — Usage error
 """
 
-import sys
-import os
-import json
 import argparse
-import subprocess
+import json
 import logging
+import os
+import subprocess
+import sys
 
 # Allow both package and root-level imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -46,11 +46,9 @@ def _get_bridge(mode: str = "local", max_iter: int = 3,
                 threshold: float = 3.0, timeout: int = 30):
     """Import and construct LuminarkLiveBridge (root or package)."""
     try:
-        from luminark.luminark_live_bridge import (
-            LuminarkLiveBridge, ExecutionMode
-        )
+        from luminark.luminark_live_bridge import ExecutionMode, LuminarkLiveBridge
     except ImportError:
-        from luminark_live_bridge import LuminarkLiveBridge, ExecutionMode
+        from luminark_live_bridge import ExecutionMode, LuminarkLiveBridge
 
     exec_mode = ExecutionMode.DOCKER if mode == "docker" else ExecutionMode.LOCAL
     return LuminarkLiveBridge(

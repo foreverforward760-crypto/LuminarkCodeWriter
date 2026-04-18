@@ -9,17 +9,23 @@ Public API:
     from luminark import LuminarkLiveBridge, ExecutionMode, GovernanceVerdict
 """
 
-from luminark.sap_geometry_engine import (
-    SAPGeometry,
-    STAGE_CENTROIDS,
-    STAGE_METADATA,
-    ADJACENCY_MATRIX,
-    AXIS_WEIGHTS,
-    AXIS_SCALES,
+from luminark.luminark_live_bridge import (
+    ExecutionMode,
+    GovernanceResult,
+    GovernanceVerdict,
+    LuminarkLiveBridge,
 )
 from luminark.sap_constrained_bayesian import (
     SAPConstrainedBayesian,
     SAPEnergy,
+)
+from luminark.sap_geometry_engine import (
+    ADJACENCY_MATRIX,
+    AXIS_SCALES,
+    AXIS_WEIGHTS,
+    STAGE_CENTROIDS,
+    STAGE_METADATA,
+    SAPGeometry,
 )
 from luminark.sap_lyapunov import (
     LyapunovController,
@@ -28,14 +34,8 @@ from luminark.sap_lyapunov import (
     StabilityReport,
 )
 from luminark.sap_stage_classifier import (
-    SAPPsychiatrist,
     SAPDiagnosis,
-)
-from luminark.luminark_live_bridge import (
-    LuminarkLiveBridge,
-    ExecutionMode,
-    GovernanceVerdict,
-    GovernanceResult,
+    SAPPsychiatrist,
 )
 
 __version__ = "1.0.0"

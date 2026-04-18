@@ -25,23 +25,20 @@ NOTE ON SUBMITTED TEST FILE:
 
 import os
 import sys
-import time
 
 import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from luminark.luminark_live_bridge import (
-    LuminarkLiveBridge,
     ExecutionMode,
-    GovernanceVerdict,
-    GovernanceResult,
     ExecutionResult,
+    GovernanceResult,
+    GovernanceVerdict,
+    LuminarkLiveBridge,
     _extract_nsdt_from_execution,
 )
-from luminark.sap_lyapunov import StabilityReport, NumericalConstitution
 from luminark.sap_geometry_engine import STAGE_METADATA
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -254,7 +251,7 @@ class TestGetStageReport:
         assert len(nsdt) == 5
         assert all(0.0 <= v <= 10.0 for v in nsdt), f"NSDT out of range: {nsdt}"
 
-    def test_stage_report_V_non_negative(self, bridge_local):
+    def test_stage_report_V_non_negative(self, bridge_local):  # noqa: N802
         """Lyapunov V must be non-negative."""
         report = bridge_local.get_stage_report("a = [1, 2, 3]")
         assert report["V"] >= 0.0

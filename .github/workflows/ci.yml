@@ -51,7 +51,9 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        run: |
+          pip install --upgrade pip setuptools wheel
+          pip install -e ".[dev]"
 
       - name: Run clinical trial suite
         run: |
@@ -83,7 +85,9 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        run: |
+          pip install --upgrade pip setuptools wheel
+          pip install -e ".[dev]"
 
       - name: Run governance gate on core modules
         run: |

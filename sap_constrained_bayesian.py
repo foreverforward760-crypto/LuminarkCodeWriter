@@ -12,15 +12,17 @@ Trap Energy function (SAPEnergy) is integrated here so the posterior is already
 deformed by the energy landscape before any downstream analysis.
 """
 
-import math
+
 import numpy as np
-from typing import Dict, List, Optional, Tuple
 
 from sap_geometry_engine import (
-    SAPGeometry, STAGE_CENTROIDS, AXIS_WEIGHTS, AXIS_SCALES,
-    STAGE_METADATA, ADJACENCY_MATRIX
+    ADJACENCY_MATRIX,
+    AXIS_SCALES,
+    AXIS_WEIGHTS,
+    STAGE_CENTROIDS,
+    STAGE_METADATA,
+    SAPGeometry,
 )
-
 
 # ── Trap Energy ───────────────────────────────────────────────────────────────
 
@@ -34,7 +36,7 @@ class SAPEnergy:
     """
 
     @staticmethod
-    def trap_energy(stage: int, x: List[float]) -> float:
+    def trap_energy(stage: int, x: list[float]) -> float:
         """Geometry-derived trap potential for a given stage."""
         c, s, t, a, coh = x[0], x[1], x[2], x[3], x[4]
 
@@ -49,7 +51,7 @@ class SAPEnergy:
         return 0.0
 
     @staticmethod
-    def compute_total_energy(x: List[float], posterior: np.ndarray) -> float:
+    def compute_total_energy(x: list[float], posterior: np.ndarray) -> float:
         """
         E[trap_energy] over the posterior distribution.
         Returns value in [0, 1].
@@ -60,23 +62,25 @@ class SAPEnergy:
         ))
 
     @staticmethod
-    def compute_gradient(x: List[float], posterior: np.ndarray,
-                         epsilon: float = 1e-5) -> List[float]:
+    def compute_gradient(x: list[float], posterior: np.ndarray,
+                         epsilon: float = 1e-5) -> list[float]:
         """
         Finite-difference gradient of total energy w.r.t. each NSDT dimension.
         Returns list of 5 floats — used for intervention targeting.
         """
         grad = []
         for i in range(5):
-            x_plus  = list(x); x_plus[i]  += epsilon
-            x_minus = list(x); x_minus[i] -= epsilon
+            x_plus = list(x)
+            x_plus[i] += epsilon
+            x_minus = list(x)
+            x_minus[i] -= epsilon
             e_plus  = SAPEnergy.compute_total_energy(x_plus,  posterior)
             e_minus = SAPEnergy.compute_total_energy(x_minus, posterior)
             grad.append((e_plus - e_minus) / (2.0 * epsilon))
         return grad
 
     @staticmethod
-    def modulate_logits(logits: np.ndarray, x: List[float],
+    def modulate_logits(logits: np.ndarray, x: list[float],
                         beta: float = 0.8) -> np.ndarray:
         """Deform the probability landscape with energy potentials."""
         energies = np.array([SAPEnergy.trap_energy(s, x) for s in range(10)])
@@ -114,7 +118,7 @@ class SAPConstrainedBayesian:
         ])
 
     def posterior(self, x: np.ndarray,
-                  prev_stage: Optional[int] = None) -> np.ndarray:
+                  prev_stage: int | None = None) -> np.ndarray:
         """
         Compute posterior over 10 stages.
         Applies energy modulation then geometric masking.
@@ -140,8 +144,8 @@ class SAPConstrainedBayesian:
             return np.ones(10) / 10.0
         return exp / total
 
-    def forward(self, x: List[float],
-                prev_stage: Optional[int] = None) -> Dict:
+    def forward(self, x: list[float],
+                prev_stage: int | None = None) -> dict:
         """
         Full forward pass — returns all SAP quantities.
 

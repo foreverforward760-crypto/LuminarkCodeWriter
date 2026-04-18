@@ -13,12 +13,12 @@ Perpetuity (SAP). Provides:
 """
 
 import math
+
 import numpy as np
-from typing import Dict, List, Tuple, Optional
 
 # ── Stage metadata ────────────────────────────────────────────────────────────
 
-STAGE_METADATA: Dict[int, dict] = {
+STAGE_METADATA: dict[int, dict] = {
     0: {"name": "Plenara",               "geometry": "Sphere",   "arc": "neutral",
         "physical_stability": True,  "conscious_stability": True,  "tumbling_coeff": 0.1},
     1: {"name": "The Spark",             "geometry": "Point",    "arc": "descending",
@@ -43,7 +43,7 @@ STAGE_METADATA: Dict[int, dict] = {
 
 # ── Canonical centroids (5D NSDT: Complexity, Stability, Tension, Adaptability, Coherence)
 
-STAGE_CENTROIDS: Dict[int, List[float]] = {
+STAGE_CENTROIDS: dict[int, list[float]] = {
     0: [0.0, 0.0, 0.0, 0.0, 0.0],
     1: [1.0, 8.0, 1.0, 1.0, 1.0],
     2: [2.0, 7.0, 2.0, 2.0, 2.0],
@@ -56,8 +56,8 @@ STAGE_CENTROIDS: Dict[int, List[float]] = {
     9: [8.0, 2.0, 8.5, 1.5, 1.5],
 }
 
-AXIS_WEIGHTS: List[float] = [1.0, 1.5, 1.5, 1.0, 0.8]
-AXIS_SCALES:  List[float] = [10.0, 10.0, 10.0, 10.0, 10.0]
+AXIS_WEIGHTS: list[float] = [1.0, 1.5, 1.5, 1.0, 0.8]
+AXIS_SCALES:  list[float] = [10.0, 10.0, 10.0, 10.0, 10.0]
 
 # ── Adjacency matrix ──────────────────────────────────────────────────────────
 
@@ -84,7 +84,7 @@ class SAPGeometry:
     """
 
     @staticmethod
-    def weighted_distance(v1: List[float], v2: List[float]) -> float:
+    def weighted_distance(v1: list[float], v2: list[float]) -> float:
         """Weighted normalised Euclidean distance between two NSDT vectors."""
         return math.sqrt(sum(
             AXIS_WEIGHTS[i] * ((v1[i] - v2[i]) / AXIS_SCALES[i]) ** 2
@@ -92,7 +92,7 @@ class SAPGeometry:
         ))
 
     @staticmethod
-    def classify(x: List[float]) -> int:
+    def classify(x: list[float]) -> int:
         """Return the dominant SAP stage (nearest centroid)."""
         distances = {
             s: SAPGeometry.weighted_distance(x, c)
@@ -101,7 +101,7 @@ class SAPGeometry:
         return min(distances, key=distances.get)
 
     @staticmethod
-    def all_distances(x: List[float]) -> Dict[int, float]:
+    def all_distances(x: list[float]) -> dict[int, float]:
         return {s: SAPGeometry.weighted_distance(x, c) for s, c in STAGE_CENTROIDS.items()}
 
     @staticmethod
@@ -109,7 +109,7 @@ class SAPGeometry:
         return ADJACENCY_MATRIX.copy()
 
     @staticmethod
-    def is_transition_allowed(prev: Optional[int], new: int) -> Tuple[bool, str]:
+    def is_transition_allowed(prev: int | None, new: int) -> tuple[bool, str]:
         if prev is None:
             return True, "initial"
         if ADJACENCY_MATRIX[prev, new] > 0:
@@ -117,7 +117,7 @@ class SAPGeometry:
         return False, f"geometric violation {prev}→{new}"
 
     @staticmethod
-    def enforce_geometry(prev: Optional[int], new: int) -> Tuple[int, bool]:
+    def enforce_geometry(prev: int | None, new: int) -> tuple[int, bool]:
         """
         Hard-enforce transition law. Returns (corrected_stage, was_valid).
         """
@@ -133,7 +133,7 @@ class SAPGeometry:
         return new, True
 
     @staticmethod
-    def compute_micro_position(x: List[float], stage: int) -> float:
+    def compute_micro_position(x: list[float], stage: int) -> float:
         """
         Continuous position on the centroid axis [stage, stage+1].
         Returns float in [stage, stage+1].

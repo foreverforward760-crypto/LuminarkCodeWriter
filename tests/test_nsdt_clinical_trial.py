@@ -22,8 +22,8 @@ Tests are organised by layer:
 """
 
 import math
-import sys
 import os
+import sys
 import time
 
 import numpy as np
@@ -32,23 +32,21 @@ import pytest
 # Allow imports from project root
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from sap_geometry_engine import (
-    SAPGeometry, STAGE_CENTROIDS, STAGE_METADATA, ADJACENCY_MATRIX
+from luminark_live_bridge import (
+    ExecutionMode,
+    ExecutionResult,
+    GovernanceVerdict,
+    LuminarkLiveBridge,
+    _extract_nsdt_from_execution,
 )
 from sap_constrained_bayesian import SAPConstrainedBayesian, SAPEnergy
-from sap_lyapunov import (
-    LyapunovController, LyapunovVulnerabilityScanner,
-    NumericalConstitution, StabilityReport
-)
+from sap_geometry_engine import ADJACENCY_MATRIX, STAGE_CENTROIDS, SAPGeometry
+from sap_lyapunov import LyapunovController, LyapunovVulnerabilityScanner, NumericalConstitution
 from sap_stage_classifier import SAPPsychiatrist
-from luminark_live_bridge import (
-    LuminarkLiveBridge, ExecutionMode, GovernanceVerdict,
-    _extract_nsdt_from_execution, ExecutionResult
-)
 
 try:
-    from hypothesis import given, settings, HealthCheck
     import hypothesis.strategies as st
+    from hypothesis import HealthCheck, given, settings
     HYPOTHESIS_AVAILABLE = True
 except ImportError:
     HYPOTHESIS_AVAILABLE = False
@@ -172,7 +170,7 @@ class TestSAPEnergyClinicalTrials:
         """Stage 8 centroid should produce the highest trap energy at Stage 8."""
         x      = STAGE_CENTROIDS[8]
         e8     = SAPEnergy.trap_energy(8, x)
-        others = [SAPEnergy.trap_energy(s, x) for s in range(10) if s != 8]
+        [SAPEnergy.trap_energy(s, x) for s in range(10) if s != 8]
         assert e8 > 0, "Stage 8 trap energy at Stage 8 centroid must be positive"
 
     def test_total_energy_bounded(self):
@@ -190,7 +188,7 @@ class TestSAPEnergyClinicalTrials:
         grad_1    = SAPEnergy.compute_gradient(x, posterior, epsilon=1e-5)
         grad_2    = SAPEnergy.compute_gradient(x, posterior, epsilon=1e-4)
         assert all(
-            abs(g1 - g2) < 1e-3 for g1, g2 in zip(grad_1, grad_2)
+            abs(g1 - g2) < 1e-3 for g1, g2 in zip(grad_1, grad_2, strict=False)
         ), "Gradient inconsistent across epsilon values"
 
     def test_zero_vector_low_trap_energy(self):
@@ -266,18 +264,18 @@ class TestBayesianClinicalTrials:
 
 class TestLyapunovClinicalTrials:
 
-    def test_V_non_negative(self, lyapunov):
+    def test_V_non_negative(self, lyapunov):  # noqa: N802
         """Lyapunov V must be non-negative for any inputs."""
         cases = [(0, 0, 0), (2.1, 0.6, 1.2), (5.0, 1.0, 3.0), (0.01, 0.01, 0.01)]
         for H, E, v in cases:
             V = lyapunov.V(H, E, v)
             assert V >= 0, f"V({H}, {E}, {v}) = {V} < 0"
 
-    def test_V_zero_at_equilibrium(self, lyapunov):
+    def test_V_zero_at_equilibrium(self, lyapunov):  # noqa: N802
         """V(0, 0, 0) must be exactly 0."""
         assert lyapunov.V(0.0, 0.0, 0.0) == 0.0
 
-    def test_dV_negative_when_energy_decreases(self, lyapunov):
+    def test_dV_negative_when_energy_decreases(self, lyapunov):  # noqa: N802
         """DAMPEN action (reduce energy) must produce negative dV."""
         dv = lyapunov.dV(
             entropy_before=1.5, energy_before=0.5, velocity_before=0.3,
@@ -315,12 +313,12 @@ class TestLyapunovClinicalTrials:
 
 class TestNumericalConstitutionClinicalTrials:
 
-    def test_low_V_passes(self, constitution):
+    def test_low_V_passes(self, constitution):  # noqa: N802
         """V=0.5 (well below threshold=3.0) must PASS."""
         report = constitution.certify(entropy=0.3, energy=0.1, velocity=0.0)
         assert report.passed, f"Low-V state should pass: {report}"
 
-    def test_high_V_fails(self, constitution):
+    def test_high_V_fails(self, constitution):  # noqa: N802
         """V > threshold must FAIL."""
         report = constitution.certify(entropy=3.0, energy=1.0, velocity=2.0)
         assert not report.passed, f"High-V state should fail: {report}"
@@ -525,7 +523,7 @@ if HYPOTHESIS_AVAILABLE:
         v=st.floats(min_value=-5.0, max_value=5.0).filter(math.isfinite),
     )
     @settings(max_examples=200)
-    def test_lyapunov_V_non_negative(H, E, v):
+    def test_lyapunov_V_non_negative(H, E, v):  # noqa: N802
         """Property: V(H, E, v) ≥ 0 for all inputs."""
         ctrl = LyapunovController()
         assert ctrl.V(H, E, v) >= 0
