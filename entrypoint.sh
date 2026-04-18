@@ -33,7 +33,7 @@ ulimit -f $((10 * 1024))
 ulimit -n 64
 
 # Maximum user processes
-ulimit -u 32
+ulimit -u 64
 
 # Core file size: 0 (no dumps)
 ulimit -c 0
