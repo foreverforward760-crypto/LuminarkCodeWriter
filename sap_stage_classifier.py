@@ -30,16 +30,18 @@ from dataclasses import dataclass
 
 # ── Diagnosis dataclass ───────────────────────────────────────────────────────
 
+
 @dataclass
 class SAPDiagnosis:
     """Result of the SAP Psychiatrist's analysis."""
-    stage:          int
-    stage_name:     str
-    error_class:    str
-    error_message:  str
+
+    stage: int
+    stage_name: str
+    error_class: str
+    error_message: str
     surgical_prompt: str
-    confidence:     float
-    urgency:        str   # LOW | MODERATE | HIGH | CRITICAL
+    confidence: float
+    urgency: str  # LOW | MODERATE | HIGH | CRITICAL
 
     def __str__(self) -> str:
         return (
@@ -55,9 +57,14 @@ class SAPDiagnosis:
 _STAGE_PATTERNS: list[dict] = [
     # Stage 9 first — most critical, must be checked before generic RuntimeError
     {
-        "stage": 9, "stage_name": "The Transparency",
-        "patterns": ["MemoryError", "SystemExit", "OverflowError",
-                     "RecursionError.*maximum recursion"],
+        "stage": 9,
+        "stage_name": "The Transparency",
+        "patterns": [
+            "MemoryError",
+            "SystemExit",
+            "OverflowError",
+            "RecursionError.*maximum recursion",
+        ],
         "urgency": "CRITICAL",
         "surgical_template": (
             "CRITICAL RESOURCE FAILURE detected ({error_class}). "
@@ -68,9 +75,14 @@ _STAGE_PATTERNS: list[dict] = [
         ),
     },
     {
-        "stage": 8, "stage_name": "The Vessel of Grounding",
-        "patterns": ["AssertionError.*wrong.*value", "wrong output",
-                     "expected.*got", "assert.*==.*False"],
+        "stage": 8,
+        "stage_name": "The Vessel of Grounding",
+        "patterns": [
+            "AssertionError.*wrong.*value",
+            "wrong output",
+            "expected.*got",
+            "assert.*==.*False",
+        ],
         "urgency": "HIGH",
         "surgical_template": (
             "SILENT FAILURE (Stage 8 False Hell) detected in {function_hint}. "
@@ -82,9 +94,16 @@ _STAGE_PATTERNS: list[dict] = [
         ),
     },
     {
-        "stage": 7, "stage_name": "The Lens",
-        "patterns": ["RuntimeError", "concurrent", "asyncio", "ThreadError",
-                     "DeadlockError", "race condition"],
+        "stage": 7,
+        "stage_name": "The Lens",
+        "patterns": [
+            "RuntimeError",
+            "concurrent",
+            "asyncio",
+            "ThreadError",
+            "DeadlockError",
+            "race condition",
+        ],
         "urgency": "HIGH",
         "surgical_template": (
             "RUNTIME / CONCURRENCY FAILURE (Stage 7) in {function_hint}: {error_message}. "
@@ -94,9 +113,16 @@ _STAGE_PATTERNS: list[dict] = [
         ),
     },
     {
-        "stage": 6, "stage_name": "The Nexus",
-        "patterns": ["IOError", "FileNotFoundError", "PermissionError",
-                     "OSError", "ConnectionError", "TimeoutError"],
+        "stage": 6,
+        "stage_name": "The Nexus",
+        "patterns": [
+            "IOError",
+            "FileNotFoundError",
+            "PermissionError",
+            "OSError",
+            "ConnectionError",
+            "TimeoutError",
+        ],
         "urgency": "MODERATE",
         "surgical_template": (
             "I/O FAILURE (Stage 6) in {function_hint}: {error_message}. "
@@ -106,9 +132,15 @@ _STAGE_PATTERNS: list[dict] = [
         ),
     },
     {
-        "stage": 5, "stage_name": "The Dynamo",
-        "patterns": ["RecursionError", "TimeoutExpired", "infinite loop",
-                     "maximum recursion depth", "took too long"],
+        "stage": 5,
+        "stage_name": "The Dynamo",
+        "patterns": [
+            "RecursionError",
+            "TimeoutExpired",
+            "infinite loop",
+            "maximum recursion depth",
+            "took too long",
+        ],
         "urgency": "HIGH",
         "surgical_template": (
             "THRESHOLD BREACH (Stage 5) in {function_hint}: {error_message}. "
@@ -118,9 +150,15 @@ _STAGE_PATTERNS: list[dict] = [
         ),
     },
     {
-        "stage": 4, "stage_name": "The Crucible",
-        "patterns": ["IndexError", "KeyError", "StopIteration",
-                     "out of.*bound", "list index out of range"],
+        "stage": 4,
+        "stage_name": "The Crucible",
+        "patterns": [
+            "IndexError",
+            "KeyError",
+            "StopIteration",
+            "out of.*bound",
+            "list index out of range",
+        ],
         "urgency": "MODERATE",
         "surgical_template": (
             "BOUNDARY VIOLATION (Stage 4) in {function_hint}: {error_message}. "
@@ -131,9 +169,15 @@ _STAGE_PATTERNS: list[dict] = [
         ),
     },
     {
-        "stage": 3, "stage_name": "The Engine",
-        "patterns": ["AssertionError", "wrong.*result", "logic error",
-                     "unexpected.*value", "ZeroDivisionError"],
+        "stage": 3,
+        "stage_name": "The Engine",
+        "patterns": [
+            "AssertionError",
+            "wrong.*result",
+            "logic error",
+            "unexpected.*value",
+            "ZeroDivisionError",
+        ],
         "urgency": "MODERATE",
         "surgical_template": (
             "LOGIC FAILURE (Stage 3) in {function_hint}: {error_message}. "
@@ -144,9 +188,15 @@ _STAGE_PATTERNS: list[dict] = [
         ),
     },
     {
-        "stage": 2, "stage_name": "The Vessel",
-        "patterns": ["TypeError", "ValueError", "cannot.*convert",
-                     "unsupported operand", "invalid literal"],
+        "stage": 2,
+        "stage_name": "The Vessel",
+        "patterns": [
+            "TypeError",
+            "ValueError",
+            "cannot.*convert",
+            "unsupported operand",
+            "invalid literal",
+        ],
         "urgency": "MODERATE",
         "surgical_template": (
             "TYPE / VALUE MISMATCH (Stage 2) in {function_hint}: {error_message}. "
@@ -156,9 +206,14 @@ _STAGE_PATTERNS: list[dict] = [
         ),
     },
     {
-        "stage": 1, "stage_name": "The Spark",
-        "patterns": ["NameError", "UnboundLocalError", "not defined",
-                     "referenced before assignment"],
+        "stage": 1,
+        "stage_name": "The Spark",
+        "patterns": [
+            "NameError",
+            "UnboundLocalError",
+            "not defined",
+            "referenced before assignment",
+        ],
         "urgency": "LOW",
         "surgical_template": (
             "UNBOUND NAME (Stage 1) in {function_hint}: {error_message}. "
@@ -169,9 +224,16 @@ _STAGE_PATTERNS: list[dict] = [
         ),
     },
     {
-        "stage": 0, "stage_name": "Plenara",
-        "patterns": ["ImportError", "ModuleNotFoundError", "AttributeError",
-                     "cannot import", "No module named", "has no attribute"],
+        "stage": 0,
+        "stage_name": "Plenara",
+        "patterns": [
+            "ImportError",
+            "ModuleNotFoundError",
+            "AttributeError",
+            "cannot import",
+            "No module named",
+            "has no attribute",
+        ],
         "urgency": "LOW",
         "surgical_template": (
             "MISSING DEPENDENCY (Stage 0) in {function_hint}: {error_message}. "
@@ -184,6 +246,7 @@ _STAGE_PATTERNS: list[dict] = [
 
 
 # ── SAP Psychiatrist ──────────────────────────────────────────────────────────
+
 
 class SAPPsychiatrist:
     """
@@ -199,11 +262,13 @@ class SAPPsychiatrist:
     def __init__(self):
         self._patterns = _STAGE_PATTERNS
 
-    def diagnose(self,
-                 error:          Exception,
-                 traceback_str:  str         = "",
-                 function_name:  str         = "unknown_function",
-                 source_code:    str         = "") -> SAPDiagnosis:
+    def diagnose(
+        self,
+        error: Exception,
+        traceback_str: str = "",
+        function_name: str = "unknown_function",
+        source_code: str = "",
+    ) -> SAPDiagnosis:
         """
         Diagnose a code failure and return a SAPDiagnosis with surgical prompt.
 
@@ -214,62 +279,61 @@ class SAPPsychiatrist:
         function_name  : name of the failing function (for the prompt)
         source_code    : snippet of the failing code (for context)
         """
-        error_class   = type(error).__name__
+        error_class = type(error).__name__
         error_message = str(error)
-        combined      = f"{error_class} {error_message} {traceback_str}"
+        combined = f"{error_class} {error_message} {traceback_str}"
 
         stage_entry, confidence = self._match_stage(combined)
 
         # Extract hints from traceback
-        name_hint   = self._extract_name_hint(error_message)
+        name_hint = self._extract_name_hint(error_message)
         module_hint = self._extract_module_hint(error_message)
 
         surgical_prompt = stage_entry["surgical_template"].format(
-            error_class    = error_class,
-            error_message  = error_message[:120],
-            function_hint  = function_name,
-            name_hint      = name_hint,
-            module_hint    = module_hint,
+            error_class=error_class,
+            error_message=error_message[:120],
+            function_hint=function_name,
+            name_hint=name_hint,
+            module_hint=module_hint,
         )
 
         return SAPDiagnosis(
-            stage          = stage_entry["stage"],
-            stage_name     = stage_entry["stage_name"],
-            error_class    = error_class,
-            error_message  = error_message,
-            surgical_prompt = surgical_prompt,
-            confidence     = confidence,
-            urgency        = stage_entry["urgency"],
+            stage=stage_entry["stage"],
+            stage_name=stage_entry["stage_name"],
+            error_class=error_class,
+            error_message=error_message,
+            surgical_prompt=surgical_prompt,
+            confidence=confidence,
+            urgency=stage_entry["urgency"],
         )
 
-    def diagnose_from_strings(self,
-                               error_class:   str,
-                               error_message: str,
-                               function_name: str = "unknown_function") -> SAPDiagnosis:
+    def diagnose_from_strings(
+        self, error_class: str, error_message: str, function_name: str = "unknown_function"
+    ) -> SAPDiagnosis:
         """
         Diagnose from string representations (useful for test output parsing).
         """
-        combined    = f"{error_class} {error_message}"
+        combined = f"{error_class} {error_message}"
         stage_entry, confidence = self._match_stage(combined)
-        name_hint   = self._extract_name_hint(error_message)
+        name_hint = self._extract_name_hint(error_message)
         module_hint = self._extract_module_hint(error_message)
 
         surgical_prompt = stage_entry["surgical_template"].format(
-            error_class    = error_class,
-            error_message  = error_message[:120],
-            function_hint  = function_name,
-            name_hint      = name_hint,
-            module_hint    = module_hint,
+            error_class=error_class,
+            error_message=error_message[:120],
+            function_hint=function_name,
+            name_hint=name_hint,
+            module_hint=module_hint,
         )
 
         return SAPDiagnosis(
-            stage          = stage_entry["stage"],
-            stage_name     = stage_entry["stage_name"],
-            error_class    = error_class,
-            error_message  = error_message,
-            surgical_prompt = surgical_prompt,
-            confidence     = confidence,
-            urgency        = stage_entry["urgency"],
+            stage=stage_entry["stage"],
+            stage_name=stage_entry["stage_name"],
+            error_class=error_class,
+            error_message=error_message,
+            surgical_prompt=surgical_prompt,
+            confidence=confidence,
+            urgency=stage_entry["urgency"],
         )
 
     def _match_stage(self, text: str) -> tuple[dict, float]:
@@ -280,7 +344,7 @@ class SAPPsychiatrist:
                 if re.search(pattern.lower(), text_lower):
                     return entry, 0.90
         # Default: Stage 3 (logic error — unknown cause)
-        return _STAGE_PATTERNS[6], 0.50   # index 6 = Stage 3 in the list
+        return _STAGE_PATTERNS[6], 0.50  # index 6 = Stage 3 in the list
 
     @staticmethod
     def _extract_name_hint(error_message: str) -> str:
@@ -309,9 +373,9 @@ class SAPPsychiatrist:
         """
         return [
             self.diagnose_from_strings(
-                f.get("error_class",   "UnknownError"),
+                f.get("error_class", "UnknownError"),
                 f.get("error_message", ""),
-                f.get("function",      "unknown"),
+                f.get("function", "unknown"),
             )
             for f in failures
         ]

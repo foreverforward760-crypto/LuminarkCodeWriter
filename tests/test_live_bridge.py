@@ -42,13 +42,14 @@ from luminark.sap_geometry_engine import STAGE_METADATA
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture(scope="module")
 def bridge_local():
     """LuminarkLiveBridge in LOCAL mode — shared across module tests."""
     return LuminarkLiveBridge(
         execution_mode=ExecutionMode.LOCAL,
         max_iterations=2,
-        stability_threshold=2000.0,   # high threshold: heuristic NSDT → large V on fast runs
+        stability_threshold=2000.0,  # high threshold: heuristic NSDT → large V on fast runs
         sandbox_timeout=15,
     )
 
@@ -59,15 +60,15 @@ def bridge_tight():
     return LuminarkLiveBridge(
         execution_mode=ExecutionMode.LOCAL,
         max_iterations=2,
-        stability_threshold=0.001,    # near-zero: almost anything fails
+        stability_threshold=0.001,  # near-zero: almost anything fails
         sandbox_timeout=10,
     )
 
 
 # ── 1. Instantiation ──────────────────────────────────────────────────────────
 
-class TestBridgeInstantiation:
 
+class TestBridgeInstantiation:
     def test_local_mode_instantiation(self):
         """Bridge accepts ExecutionMode.LOCAL enum and stores it correctly."""
         bridge = LuminarkLiveBridge(execution_mode=ExecutionMode.LOCAL)
@@ -108,8 +109,8 @@ class TestBridgeInstantiation:
 
 # ── 2. govern() contract ──────────────────────────────────────────────────────
 
-class TestGovernContract:
 
+class TestGovernContract:
     def test_govern_returns_governance_result(self, bridge_local):
         """govern() must return a GovernanceResult instance."""
         result = bridge_local.govern("print('hello')")
@@ -134,8 +135,16 @@ class TestGovernContract:
     def test_audit_entry_has_required_keys(self, bridge_local):
         """Each audit entry must contain all governance fields."""
         result = bridge_local.govern("a = 42")
-        required = {"iteration", "exit_code", "nsdt", "sap_stage",
-                    "stage_name", "V", "passed", "action"}
+        required = {
+            "iteration",
+            "exit_code",
+            "nsdt",
+            "sap_stage",
+            "stage_name",
+            "V",
+            "passed",
+            "action",
+        }
         for entry in result.audit_trail:
             missing = required - set(entry.keys())
             assert not missing, f"Audit entry missing keys: {missing}"
@@ -179,8 +188,8 @@ class TestGovernContract:
 
 # ── 3. GovernanceResult properties ───────────────────────────────────────────
 
-class TestGovernanceResultProperties:
 
+class TestGovernanceResultProperties:
     def test_v_history_is_list_of_floats(self, bridge_local):
         """v_history property returns a list of floats matching audit_trail length."""
         result = bridge_local.govern("y = 3.14")
@@ -198,6 +207,7 @@ class TestGovernanceResultProperties:
     def test_to_dict_is_json_serialisable(self, bridge_local):
         """to_dict() must return a dict that JSON can serialise."""
         import json
+
         result = bridge_local.govern("print('serialise me')")
         d = result.to_dict()
         assert isinstance(d, dict)
@@ -223,8 +233,8 @@ class TestGovernanceResultProperties:
 
 # ── 4. get_stage_report() ─────────────────────────────────────────────────────
 
-class TestGetStageReport:
 
+class TestGetStageReport:
     def test_stage_report_returns_dict(self, bridge_local):
         """get_stage_report() must return a dict."""
         report = bridge_local.get_stage_report("x = 42")
@@ -233,8 +243,16 @@ class TestGetStageReport:
     def test_stage_report_required_keys(self, bridge_local):
         """get_stage_report() dict must contain all required keys."""
         report = bridge_local.get_stage_report("print('check')")
-        required = {"nsdt", "sap_stage", "stage_name", "V", "passed",
-                    "action", "message", "exec_success"}
+        required = {
+            "nsdt",
+            "sap_stage",
+            "stage_name",
+            "V",
+            "passed",
+            "action",
+            "message",
+            "exec_success",
+        }
         missing = required - set(report.keys())
         assert not missing, f"get_stage_report missing keys: {missing}"
 
@@ -264,8 +282,8 @@ class TestGetStageReport:
     def test_stage_report_stage_name_matches_metadata(self, bridge_local):
         """stage_name must match STAGE_METADATA for the reported stage."""
         report = bridge_local.get_stage_report("x = 5.0 ** 0.5")
-        stage      = report["sap_stage"]
-        expected   = STAGE_METADATA[stage]["name"]
+        stage = report["sap_stage"]
+        expected = STAGE_METADATA[stage]["name"]
         assert report["stage_name"] == expected, (
             f"stage_name {report['stage_name']!r} does not match "
             f"STAGE_METADATA[{stage}]['name'] = {expected!r}"
@@ -284,8 +302,8 @@ class TestGetStageReport:
 
 # ── 5. NSDT extraction ────────────────────────────────────────────────────────
 
-class TestNSDTExtraction:
 
+class TestNSDTExtraction:
     def test_extraction_returns_5_values(self):
         """_extract_nsdt_from_execution must return exactly 5 values."""
         er = ExecutionResult(stdout="ok\n", stderr="", exit_code=0, elapsed_s=0.05)
@@ -313,11 +331,9 @@ class TestNSDTExtraction:
     def test_tension_increases_with_stderr(self):
         """More stderr content → higher tension dimension."""
         short_err = ExecutionResult(stdout="", stderr="error", exit_code=1, elapsed_s=0.05)
-        long_err  = ExecutionResult(
-            stdout="", stderr="error\n" * 50, exit_code=1, elapsed_s=0.05
-        )
+        long_err = ExecutionResult(stdout="", stderr="error\n" * 50, exit_code=1, elapsed_s=0.05)
         nsdt_short = _extract_nsdt_from_execution(short_err, "x")
-        nsdt_long  = _extract_nsdt_from_execution(long_err,  "x")
+        nsdt_long = _extract_nsdt_from_execution(long_err, "x")
         assert nsdt_long[2] >= nsdt_short[2], (
             f"Long stderr tension {nsdt_long[2]} should be ≥ short stderr tension {nsdt_short[2]}"
         )
@@ -325,8 +341,11 @@ class TestNSDTExtraction:
     def test_timed_out_execution_high_tension(self):
         """Timed-out execution should produce a non-zero tension."""
         er = ExecutionResult(
-            stdout="", stderr="Sandbox execution timed out.",
-            exit_code=124, elapsed_s=30.0, timed_out=True,
+            stdout="",
+            stderr="Sandbox execution timed out.",
+            exit_code=124,
+            elapsed_s=30.0,
+            timed_out=True,
         )
         nsdt = _extract_nsdt_from_execution(er, "while True: pass")
         assert nsdt[2] > 0.0, "Timed-out run should have non-zero tension"
@@ -334,8 +353,8 @@ class TestNSDTExtraction:
 
 # ── 6. Diagnoses and repair ───────────────────────────────────────────────────
 
-class TestDiagnosisAndRepair:
 
+class TestDiagnosisAndRepair:
     def test_failed_run_produces_diagnoses(self, bridge_tight):
         """A run that fails the constitution must produce at least one diagnosis."""
         result = bridge_tight.govern("x = 1 + 1")
@@ -347,8 +366,7 @@ class TestDiagnosisAndRepair:
         """Every diagnosis must have a non-empty surgical prompt."""
         result = bridge_tight.govern("y = 42")
         for d in result.diagnoses:
-            assert d.surgical_prompt.strip(), \
-                f"Empty surgical prompt in diagnosis stage {d.stage}"
+            assert d.surgical_prompt.strip(), f"Empty surgical prompt in diagnosis stage {d.stage}"
 
     def test_diagnosis_stage_in_range(self, bridge_tight):
         """Diagnosis stage must be in [0, 9]."""
@@ -379,8 +397,8 @@ class TestDiagnosisAndRepair:
 
 # ── 7. Docker fallback ────────────────────────────────────────────────────────
 
-class TestDockerFallback:
 
+class TestDockerFallback:
     def test_docker_mode_falls_back_gracefully(self):
         """
         DOCKER mode falls back to LOCAL if Docker is unavailable.

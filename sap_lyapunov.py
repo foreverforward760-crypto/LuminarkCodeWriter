@@ -26,6 +26,7 @@ import numpy as np
 
 # ── Lyapunov Controller ───────────────────────────────────────────────────────
 
+
 class LyapunovController:
     """
     Lyapunov stability controller.
@@ -43,34 +44,48 @@ class LyapunovController:
 
     def V(self, entropy: float, energy: float, velocity: float) -> float:  # noqa: N802
         """Compute Lyapunov function value. V ≥ 0."""
-        return self.w_H * entropy + self.w_E * energy + self.w_v * (velocity ** 2)
+        return self.w_H * entropy + self.w_E * energy + self.w_v * (velocity**2)
 
     def dV(  # noqa: N802
         self,
-           entropy_before: float, energy_before: float, velocity_before: float,
-           entropy_after:  float, energy_after:  float, velocity_after:  float,
+        entropy_before: float,
+        energy_before: float,
+        velocity_before: float,
+        entropy_after: float,
+        energy_after: float,
+        velocity_after: float,
     ) -> float:  # noqa: N802
         """
         Compute dV = V_after - V_before.
         Negative value = system moving toward equilibrium (good).
         Positive value = diverging — escalate to intervention.
         """
-        return (self.V(entropy_after, energy_after, velocity_after) -
-                self.V(entropy_before, energy_before, velocity_before))
+        return self.V(entropy_after, energy_after, velocity_after) - self.V(
+            entropy_before, energy_before, velocity_before
+        )
 
-    def lyapunov_decrease(self,
-                          entropy_before: float, energy_before: float, velocity_before: float,
-                          entropy_after:  float, energy_after:  float, velocity_after:  float,
+    def lyapunov_decrease(
+        self,
+        entropy_before: float,
+        energy_before: float,
+        velocity_before: float,
+        entropy_after: float,
+        energy_after: float,
+        velocity_after: float,
     ) -> float:  # noqa: N802
         """Alias: positive = V decreased (stabilising); negative = V increased (diverging)."""
-        return -self.dV(entropy_before, energy_before, velocity_before,
-                        entropy_after,  energy_after,  velocity_after)
+        return -self.dV(
+            entropy_before,
+            energy_before,
+            velocity_before,
+            entropy_after,
+            energy_after,
+            velocity_after,
+        )
 
-    def recommend_action(self,
-                         entropy: float,
-                         energy:  float,
-                         velocity: float,
-                         cynical_loop: bool = False) -> str:
+    def recommend_action(
+        self, entropy: float, energy: float, velocity: float, cynical_loop: bool = False
+    ) -> str:
         """
         Defense action: HOLD / DAMPEN / INTERVENE / BREAK_PATTERN.
         Chosen to strictly decrease V under reasonable assumptions.
@@ -84,13 +99,15 @@ class LyapunovController:
             return "DAMPEN"
         return "HOLD"
 
-    def is_stable(self, entropy: float, energy: float, velocity: float,
-                  threshold: float = 3.0) -> bool:
+    def is_stable(
+        self, entropy: float, energy: float, velocity: float, threshold: float = 3.0
+    ) -> bool:
         """Return True if V is below the stability threshold."""
         return self.V(entropy, energy, velocity) < threshold
 
 
 # ── Lyapunov Vulnerability Scanner ───────────────────────────────────────────
+
 
 class LyapunovVulnerabilityScanner:
     """
@@ -101,20 +118,27 @@ class LyapunovVulnerabilityScanner:
     timestamps shape: (N,)  — unix timestamps
     """
 
-    def __init__(self, w_H: float = 1.0, w_E: float = 2.0, w_v: float = 0.5,
-                 instability_threshold: float = 0.2):
+    def __init__(
+        self,
+        w_H: float = 1.0,
+        w_E: float = 2.0,
+        w_v: float = 0.5,
+        instability_threshold: float = 0.2,
+    ):
         self.controller = LyapunovController(w_H=w_H, w_E=w_E, w_v=w_v)
         self.instability_threshold = instability_threshold
 
-    def _row_to_lyapunov_inputs(self, row: np.ndarray, velocity: float) -> tuple[float, float, float]:
+    def _row_to_lyapunov_inputs(
+        self, row: np.ndarray, velocity: float
+    ) -> tuple[float, float, float]:
         """
         Map a 5D NSDT row to (entropy_proxy, energy_proxy, velocity).
         entropy_proxy: std of normalised values (information disorder proxy)
         energy_proxy:  (tension + (1 - adaptability)) / 2
         """
-        row_norm      = row / 10.0
+        row_norm = row / 10.0
         entropy_proxy = float(np.std(row_norm))
-        energy_proxy  = float((row_norm[2] + (1.0 - row_norm[3])) / 2.0)
+        energy_proxy = float((row_norm[2] + (1.0 - row_norm[3])) / 2.0)
         return entropy_proxy, energy_proxy, velocity
 
     def scan_code_path(self, trace: np.ndarray, timestamps: np.ndarray) -> dict:
@@ -127,8 +151,12 @@ class LyapunovVulnerabilityScanner:
             instability_count : int
         """
         if trace.ndim != 2 or trace.shape[1] < 5:
-            return {"vulnerabilities": [], "v_series": [],
-                    "instability_count": 0, "error": "trace must be (N, 5)"}
+            return {
+                "vulnerabilities": [],
+                "v_series": [],
+                "instability_count": 0,
+                "error": "trace must be (N, 5)",
+            }
 
         v_series: list[float] = []
         vulnerabilities: list[dict] = []
@@ -139,7 +167,7 @@ class LyapunovVulnerabilityScanner:
             if i == 0:
                 velocity = 0.0
             else:
-                dt       = max(1e-3, float(timestamps[i] - timestamps[i - 1]))
+                dt = max(1e-3, float(timestamps[i] - timestamps[i - 1]))
                 velocity = float(np.mean(np.abs(trace[i, :5] - trace[i - 1, :5]))) / dt
 
             ep, eng, vel = self._row_to_lyapunov_inputs(row, velocity)
@@ -149,52 +177,59 @@ class LyapunovVulnerabilityScanner:
             if prev_v is not None:
                 dv = v_val - prev_v
                 if dv > self.instability_threshold:
-                    vulnerabilities.append({
-                        "index":        i,
-                        "timestamp":    float(timestamps[i]),
-                        "dV":           round(dv, 5),
-                        "V":            round(v_val, 5),
-                        "state_vector": row[:5].tolist(),
-                        "severity":     "HIGH" if dv > self.instability_threshold * 2 else "MODERATE",
-                    })
+                    vulnerabilities.append(
+                        {
+                            "index": i,
+                            "timestamp": float(timestamps[i]),
+                            "dV": round(dv, 5),
+                            "V": round(v_val, 5),
+                            "state_vector": row[:5].tolist(),
+                            "severity": "HIGH"
+                            if dv > self.instability_threshold * 2
+                            else "MODERATE",
+                        }
+                    )
             prev_v = v_val
 
         return {
-            "vulnerabilities":   vulnerabilities,
-            "v_series":          v_series,
+            "vulnerabilities": vulnerabilities,
+            "v_series": v_series,
             "instability_count": len(vulnerabilities),
         }
 
 
 # ── Numerical Constitution ────────────────────────────────────────────────────
 
+
 @dataclass
 class StabilityReport:
-    passed:      bool
-    V:           float
-    action:      str
-    entropy:     float
-    energy:      float
-    velocity:    float
-    message:     str
+    passed: bool
+    V: float
+    action: str
+    entropy: float
+    energy: float
+    velocity: float
+    message: str
 
     def to_dict(self) -> dict:
         """Return a JSON-serialisable dict of this stability report."""
         return {
-            "passed":   self.passed,
-            "V":        self.V,
-            "action":   self.action,
-            "entropy":  self.entropy,
-            "energy":   self.energy,
+            "passed": self.passed,
+            "V": self.V,
+            "action": self.action,
+            "entropy": self.entropy,
+            "energy": self.energy,
             "velocity": self.velocity,
-            "message":  self.message,
+            "message": self.message,
         }
 
     def __str__(self) -> str:
         status = "✅ STABLE" if self.passed else "❌ UNSTABLE"
-        return (f"{status} | V={self.V:.4f} | action={self.action} | "
-                f"H={self.entropy:.3f} E={self.energy:.3f} v={self.velocity:.3f} | "
-                f"{self.message}")
+        return (
+            f"{status} | V={self.V:.4f} | action={self.action} | "
+            f"H={self.entropy:.3f} E={self.energy:.3f} v={self.velocity:.3f} | "
+            f"{self.message}"
+        )
 
 
 class NumericalConstitution:
@@ -206,11 +241,14 @@ class NumericalConstitution:
     accepted. Failure triggers escalation to the SAPPsychiatrist.
     """
 
-    def __init__(self, controller: LyapunovController | None = None,
-                 stability_threshold: float = 3.0,
-                 intervention_threshold: float = 5.0):
-        self.controller             = controller or LyapunovController()
-        self.stability_threshold    = stability_threshold
+    def __init__(
+        self,
+        controller: LyapunovController | None = None,
+        stability_threshold: float = 3.0,
+        intervention_threshold: float = 5.0,
+    ):
+        self.controller = controller or LyapunovController()
+        self.stability_threshold = stability_threshold
         self.intervention_threshold = intervention_threshold
 
     def certify(self, entropy: float, energy: float, velocity: float) -> StabilityReport:
@@ -221,18 +259,22 @@ class NumericalConstitution:
             passed=True  if V < stability_threshold  (PASS)
             passed=False if V ≥ stability_threshold  (FAIL — escalate)
         """
-        V      = self.controller.V(entropy, energy, velocity)
+        V = self.controller.V(entropy, energy, velocity)
         action = self.controller.recommend_action(entropy, energy, velocity)
         passed = self.stability_threshold > V
 
         if passed:
             message = "System within constitutional stability bounds."
         elif self.intervention_threshold > V:
-            message = ("V exceeds stability threshold — DAMPEN required. "
-                       "Escalate to SAPPsychiatrist for surgical prompt.")
+            message = (
+                "V exceeds stability threshold — DAMPEN required. "
+                "Escalate to SAPPsychiatrist for surgical prompt."
+            )
         else:
-            message = ("V exceeds intervention threshold — CRITICAL. "
-                       "Emergency intervention required. Stage progression blocked.")
+            message = (
+                "V exceeds intervention threshold — CRITICAL. "
+                "Emergency intervention required. Stage progression blocked."
+            )
 
         return StabilityReport(
             passed=passed,
@@ -244,7 +286,6 @@ class NumericalConstitution:
             message=message,
         )
 
-    def certify_from_trace(self, entropy: float, energy: float,
-                            velocity: float) -> bool:
+    def certify_from_trace(self, entropy: float, energy: float, velocity: float) -> bool:
         """Convenience: returns True if certify() passes."""
         return self.certify(entropy, energy, velocity).passed

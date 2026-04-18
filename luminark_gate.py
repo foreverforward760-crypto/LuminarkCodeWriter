@@ -37,13 +37,12 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 logging.basicConfig(
-    level=logging.WARNING,   # quiet by default; use --verbose to see detail
-    format="%(asctime)s [%(levelname)s] %(message)s"
+    level=logging.WARNING,  # quiet by default; use --verbose to see detail
+    format="%(asctime)s [%(levelname)s] %(message)s",
 )
 
 
-def _get_bridge(mode: str = "local", max_iter: int = 3,
-                threshold: float = 3.0, timeout: int = 30):
+def _get_bridge(mode: str = "local", max_iter: int = 3, threshold: float = 3.0, timeout: int = 30):
     """Import and construct LuminarkLiveBridge (root or package)."""
     try:
         from luminark.luminark_live_bridge import ExecutionMode, LuminarkLiveBridge
@@ -88,13 +87,17 @@ def cmd_govern(args) -> int:
 
     if args.json:
         out = {
-            "verdict":      result.verdict.value,
-            "iterations":   result.iterations,
-            "elapsed_s":    result.total_elapsed_s,
-            "audit_trail":  result.audit_trail,
-            "diagnoses":    [
-                {"stage": d.stage, "stage_name": d.stage_name,
-                 "urgency": d.urgency, "surgical_prompt": d.surgical_prompt}
+            "verdict": result.verdict.value,
+            "iterations": result.iterations,
+            "elapsed_s": result.total_elapsed_s,
+            "audit_trail": result.audit_trail,
+            "diagnoses": [
+                {
+                    "stage": d.stage,
+                    "stage_name": d.stage_name,
+                    "urgency": d.urgency,
+                    "surgical_prompt": d.surgical_prompt,
+                }
                 for d in result.diagnoses
             ],
         }
@@ -109,6 +112,7 @@ def cmd_govern(args) -> int:
 
     # Exit codes
     from luminark_live_bridge import GovernanceVerdict
+
     if result.verdict == GovernanceVerdict.PASS:
         return 0
     if result.verdict == GovernanceVerdict.FAIL_REPAIRED:
@@ -158,11 +162,11 @@ def cmd_status(args) -> int:
 
     # Check imports
     components = [
-        ("sap_geometry_engine",      "SAPGeometry"),
+        ("sap_geometry_engine", "SAPGeometry"),
         ("sap_constrained_bayesian", "SAPConstrainedBayesian"),
-        ("sap_lyapunov",             "LyapunovController"),
-        ("sap_stage_classifier",     "SAPPsychiatrist"),
-        ("luminark_live_bridge",     "LuminarkLiveBridge"),
+        ("sap_lyapunov", "LyapunovController"),
+        ("sap_stage_classifier", "SAPPsychiatrist"),
+        ("luminark_live_bridge", "LuminarkLiveBridge"),
     ]
 
     all_ok = True
@@ -176,18 +180,22 @@ def cmd_status(args) -> int:
             all_ok = False
 
     # Check Docker
-    docker_ok = subprocess.run(
-        ["docker", "info"], capture_output=True
-    ).returncode == 0
-    print(f"  {'✅' if docker_ok else '⚠️ '} Docker: {'available' if docker_ok else 'not available (LOCAL mode only)'}")
+    docker_ok = subprocess.run(["docker", "info"], capture_output=True).returncode == 0
+    print(
+        f"  {'✅' if docker_ok else '⚠️ '} Docker: {'available' if docker_ok else 'not available (LOCAL mode only)'}"
+    )
 
     # Check sandbox image
     if docker_ok:
-        img_ok = subprocess.run(
-            ["docker", "image", "inspect", "luminark-sandbox:latest"],
-            capture_output=True
-        ).returncode == 0
-        print(f"  {'✅' if img_ok else '⚠️ '} luminark-sandbox:latest: {'built' if img_ok else 'not built — run: make build'}")
+        img_ok = (
+            subprocess.run(
+                ["docker", "image", "inspect", "luminark-sandbox:latest"], capture_output=True
+            ).returncode
+            == 0
+        )
+        print(
+            f"  {'✅' if img_ok else '⚠️ '} luminark-sandbox:latest: {'built' if img_ok else 'not built — run: make build'}"
+        )
 
     print()
     print("  Overall:", "✅ Ready" if all_ok else "❌ Issues detected — run: make install")
@@ -200,8 +208,9 @@ def main() -> int:
         description="LUMINARK Active Governance Gate",
     )
     parser.add_argument("--verbose", "-v", action="store_true")
-    parser.add_argument("--json", "-j", action="store_true",
-                        help="Output JSON instead of human-readable text")
+    parser.add_argument(
+        "--json", "-j", action="store_true", help="Output JSON instead of human-readable text"
+    )
 
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -229,7 +238,7 @@ def main() -> int:
     dispatch = {
         "govern": cmd_govern,
         "report": cmd_report,
-        "test":   cmd_test,
+        "test": cmd_test,
         "status": cmd_status,
     }
     return dispatch[args.command](args)

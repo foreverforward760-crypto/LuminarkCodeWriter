@@ -48,20 +48,21 @@ logging.basicConfig(
 
 # ── Configuration from environment ────────────────────────────────────────────
 
-REDIS_URL           = os.getenv("REDIS_URL",             "redis://redis:6379")
-DOCKER_IMAGE        = os.getenv("LUMINARK_DOCKER_IMAGE", "luminark-sandbox:latest")
-MAX_ITERATIONS      = int(os.getenv("LUMINARK_MAX_ITERATIONS", "3"))
-EXEC_MODE           = os.getenv("LUMINARK_MODE",         "docker")
+REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
+DOCKER_IMAGE = os.getenv("LUMINARK_DOCKER_IMAGE", "luminark-sandbox:latest")
+MAX_ITERATIONS = int(os.getenv("LUMINARK_MAX_ITERATIONS", "3"))
+EXEC_MODE = os.getenv("LUMINARK_MODE", "docker")
 STABILITY_THRESHOLD = float(os.getenv("LUMINARK_STABILITY_THRESHOLD", "3.0"))
 
 # Redis key prefixes
-_KEY_V_SERIES    = "luminark:v_series:{ctx}"        # list of floats
-_KEY_STAGE_SEQ   = "luminark:stage_seq:{ctx}"       # list of ints
-_KEY_AUDIT       = "luminark:audit:{ctx}"            # list of JSON strings
-_KEY_LATEST      = "luminark:latest:{ctx}"           # JSON of latest result
-_KEY_VERDICT_CTR = "luminark:verdicts:{verdict}"     # global counters
+_KEY_V_SERIES = "luminark:v_series:{ctx}"  # list of floats
+_KEY_STAGE_SEQ = "luminark:stage_seq:{ctx}"  # list of ints
+_KEY_AUDIT = "luminark:audit:{ctx}"  # list of JSON strings
+_KEY_LATEST = "luminark:latest:{ctx}"  # JSON of latest result
+_KEY_VERDICT_CTR = "luminark:verdicts:{verdict}"  # global counters
 
 # ── Redis client ──────────────────────────────────────────────────────────────
+
 
 def _get_redis() -> redis.Redis:
     """Return a Redis client. Raises RuntimeError if Redis is unavailable."""
@@ -84,16 +85,17 @@ def _get_bridge() -> LuminarkLiveBridge:
     if _bridge is None:
         mode = ExecutionMode.DOCKER if EXEC_MODE == "docker" else ExecutionMode.LOCAL
         _bridge = LuminarkLiveBridge(
-            execution_mode      = mode,
-            max_iterations      = MAX_ITERATIONS,
-            docker_image        = DOCKER_IMAGE,
-            stability_threshold = STABILITY_THRESHOLD,
+            execution_mode=mode,
+            max_iterations=MAX_ITERATIONS,
+            docker_image=DOCKER_IMAGE,
+            stability_threshold=STABILITY_THRESHOLD,
         )
         logger.info(f"LuminarkLiveBridge singleton created | mode={mode.value}")
     return _bridge
 
 
 # ── Lifespan ──────────────────────────────────────────────────────────────────
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -107,39 +109,41 @@ async def lifespan(app: FastAPI):
 # ── FastAPI app ───────────────────────────────────────────────────────────────
 
 app = FastAPI(
-    title       = "LUMINARK Live Bridge",
-    description = (
+    title="LUMINARK Live Bridge",
+    description=(
         "SAP-governed code execution service. Runs code in an isolated sandbox, "
         "evaluates Lyapunov stability, and iteratively repairs failures via the "
         "SAPPsychiatrist. Stores full telemetry in Redis."
     ),
-    version     = "1.0.0",
-    lifespan    = lifespan,
+    version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins  = ["*"],
-    allow_methods  = ["*"],
-    allow_headers  = ["*"],
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
 # ── Request / Response models ─────────────────────────────────────────────────
 
+
 class GovernRequest(BaseModel):
-    code:             str  = Field(..., description="Python source code to govern")
-    task_description: str  = Field("",  description="Human-readable task description")
-    context_id:       str  = Field("default", description="ID for telemetry grouping")
-    prev_stage:       int | None = Field(None, ge=0, le=9)
+    code: str = Field(..., description="Python source code to govern")
+    task_description: str = Field("", description="Human-readable task description")
+    context_id: str = Field("default", description="ID for telemetry grouping")
+    prev_stage: int | None = Field(None, ge=0, le=9)
 
 
 class StageReportRequest(BaseModel):
-    code:       str = Field(..., description="Python source code to classify")
+    code: str = Field(..., description="Python source code to classify")
     context_id: str = Field("default")
 
 
 # ── Telemetry helper ──────────────────────────────────────────────────────────
+
 
 def _persist_telemetry(r: redis.Redis | None, context_id: str, result_dict: dict):
     """
@@ -182,6 +186,7 @@ def _persist_telemetry(r: redis.Redis | None, context_id: str, result_dict: dict
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
+
 @app.post("/govern")
 def govern(request: GovernRequest):
     """
@@ -196,13 +201,13 @@ def govern(request: GovernRequest):
     7. Return GovernanceResult as JSON.
     """
     bridge = _get_bridge()
-    r      = _get_redis()
+    r = _get_redis()
 
     try:
         result = bridge.govern(
-            code             = request.code,
-            task_description = request.task_description,
-            prev_stage       = request.prev_stage,
+            code=request.code,
+            task_description=request.task_description,
+            prev_stage=request.prev_stage,
         )
     except Exception as exc:
         logger.error(f"Bridge govern() raised: {exc}", exc_info=True)
@@ -213,13 +218,13 @@ def govern(request: GovernRequest):
 
     # dV/dt summary for the response
     v_hist = result.v_history
-    dv_dt  = None
+    dv_dt = None
     if len(v_hist) >= 2:
         dv_dt = round(v_hist[-1] - v_hist[0], 4)
 
     return {
         **result_dict,
-        "context_id":    request.context_id,
+        "context_id": request.context_id,
         "dv_dt_overall": dv_dt,
         "telemetry_stored": r is not None,
     }
@@ -261,12 +266,12 @@ def get_telemetry(context_id: str, limit: int = 50):
 
     try:
         ctx = context_id
-        v_raw    = r.lrange(_KEY_V_SERIES.format(ctx=ctx), -limit, -1)
-        s_raw    = r.lrange(_KEY_STAGE_SEQ.format(ctx=ctx), -limit, -1)
+        v_raw = r.lrange(_KEY_V_SERIES.format(ctx=ctx), -limit, -1)
+        s_raw = r.lrange(_KEY_STAGE_SEQ.format(ctx=ctx), -limit, -1)
         latest_s = r.get(_KEY_LATEST.format(ctx=ctx))
         run_count = r.llen(_KEY_AUDIT.format(ctx=ctx))
 
-        v_series       = [float(v) for v in v_raw]
+        v_series = [float(v) for v in v_raw]
         stage_sequence = [int(s) for s in s_raw]
 
         # dV/dt: slope across the stored V-series
@@ -282,13 +287,13 @@ def get_telemetry(context_id: str, limit: int = 50):
         ]
 
         return {
-            "context_id":        context_id,
-            "v_series":          v_series,
-            "stage_sequence":    stage_sequence,
-            "dv_dt_overall":     dv_dt,
+            "context_id": context_id,
+            "v_series": v_series,
+            "stage_sequence": stage_sequence,
+            "dv_dt_overall": dv_dt,
             "instability_events": instability_events,
-            "run_count":         run_count,
-            "latest":            json.loads(latest_s) if latest_s else None,
+            "run_count": run_count,
+            "latest": json.loads(latest_s) if latest_s else None,
         }
     except Exception as exc:
         logger.error(f"Telemetry read failed: {exc}", exc_info=True)
@@ -298,15 +303,15 @@ def get_telemetry(context_id: str, limit: int = 50):
 @app.get("/health")
 def health():
     """Liveness check — confirms bridge and Redis status."""
-    r      = _get_redis()
+    r = _get_redis()
     _get_bridge()
     return {
-        "status":       "ok",
-        "service":      "LUMINARK Live Bridge",
-        "version":      "1.0.0",
-        "exec_mode":    EXEC_MODE,
+        "status": "ok",
+        "service": "LUMINARK Live Bridge",
+        "version": "1.0.0",
+        "exec_mode": EXEC_MODE,
         "max_iterations": MAX_ITERATIONS,
         "stability_threshold": STABILITY_THRESHOLD,
-        "redis":        "connected" if r is not None else "unavailable",
-        "bridge":       "ready",
+        "redis": "connected" if r is not None else "unavailable",
+        "bridge": "ready",
     }

@@ -38,36 +38,36 @@ from sap_lyapunov import LyapunovController, NumericalConstitution, StabilityRep
 from sap_stage_classifier import SAPDiagnosis, SAPPsychiatrist
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
 
 # ── Enums and config ──────────────────────────────────────────────────────────
 
+
 class ExecutionMode(StrEnum):
     DOCKER = "docker"
-    LOCAL  = "local"
+    LOCAL = "local"
 
 
 class GovernanceVerdict(StrEnum):
-    PASS            = "PASS"
-    FAIL_REPAIRED   = "FAIL_REPAIRED"
-    FAIL_EXHAUSTED  = "FAIL_EXHAUSTED"
+    PASS = "PASS"
+    FAIL_REPAIRED = "FAIL_REPAIRED"
+    FAIL_EXHAUSTED = "FAIL_EXHAUSTED"
     EXECUTION_ERROR = "EXECUTION_ERROR"
 
 
 # ── Result types ──────────────────────────────────────────────────────────────
 
+
 @dataclass
 class ExecutionResult:
     """Raw result from one sandbox execution."""
-    stdout:       str
-    stderr:       str
-    exit_code:    int
-    elapsed_s:    float
-    timed_out:    bool = False
+
+    stdout: str
+    stderr: str
+    exit_code: int
+    elapsed_s: float
+    timed_out: bool = False
 
     @property
     def success(self) -> bool:
@@ -80,12 +80,13 @@ class GovernanceResult:
     Final result from the full governance loop.
     Contains the audit trail of every iteration.
     """
-    verdict:        GovernanceVerdict
-    final_code:     str
-    iterations:     int
-    audit_trail:    list[dict]       = field(default_factory=list)
-    final_report:   StabilityReport | None = None
-    diagnoses:      list[SAPDiagnosis]         = field(default_factory=list)
+
+    verdict: GovernanceVerdict
+    final_code: str
+    iterations: int
+    audit_trail: list[dict] = field(default_factory=list)
+    final_report: StabilityReport | None = None
+    diagnoses: list[SAPDiagnosis] = field(default_factory=list)
     total_elapsed_s: float = 0.0
 
     # ── Convenience properties ─────────────────────────────────────────────
@@ -112,38 +113,38 @@ class GovernanceResult:
         final_report_dict = None
         if self.final_report is not None:
             final_report_dict = {
-                "passed":   self.final_report.passed,
-                "V":        self.final_report.V,
-                "action":   self.final_report.action,
-                "entropy":  self.final_report.entropy,
-                "energy":   self.final_report.energy,
+                "passed": self.final_report.passed,
+                "V": self.final_report.V,
+                "action": self.final_report.action,
+                "entropy": self.final_report.entropy,
+                "energy": self.final_report.energy,
                 "velocity": self.final_report.velocity,
-                "message":  self.final_report.message,
+                "message": self.final_report.message,
             }
 
         diagnoses_list = [
             {
-                "stage":          d.stage,
-                "stage_name":     d.stage_name,
-                "error_class":    d.error_class,
-                "error_message":  d.error_message,
+                "stage": d.stage,
+                "stage_name": d.stage_name,
+                "error_class": d.error_class,
+                "error_message": d.error_message,
                 "surgical_prompt": d.surgical_prompt,
-                "confidence":     d.confidence,
-                "urgency":        d.urgency,
+                "confidence": d.confidence,
+                "urgency": d.urgency,
             }
             for d in self.diagnoses
         ]
 
         return {
-            "verdict":         self.verdict.value,
-            "final_code":      self.final_code,
-            "iterations":      self.iterations,
-            "audit_trail":     self.audit_trail,
-            "final_report":    final_report_dict,
-            "diagnoses":       diagnoses_list,
+            "verdict": self.verdict.value,
+            "final_code": self.final_code,
+            "iterations": self.iterations,
+            "audit_trail": self.audit_trail,
+            "final_report": final_report_dict,
+            "diagnoses": diagnoses_list,
             "total_elapsed_s": self.total_elapsed_s,
-            "v_history":       self.v_history,
-            "stage_history":   self.stage_history,
+            "v_history": self.v_history,
+            "stage_history": self.stage_history,
         }
 
     def summary(self) -> str:
@@ -163,8 +164,8 @@ class GovernanceResult:
 
 # ── NSDT extractor ────────────────────────────────────────────────────────────
 
-def _extract_nsdt_from_execution(result: ExecutionResult,
-                                  code: str) -> list[float]:
+
+def _extract_nsdt_from_execution(result: ExecutionResult, code: str) -> list[float]:
     """
     Heuristically derive an NSDT vector from an execution result.
 
@@ -178,10 +179,10 @@ def _extract_nsdt_from_execution(result: ExecutionResult,
       Adaptability ← execution speed proxy (fast = high adaptability)
       Coherence    ← stdout/stderr ratio (clean output = coherent)
     """
-    loc         = len(code.splitlines())
-    complexity  = min(10.0, loc / 50.0 * 10.0)
-    stability   = 8.0 if result.success else 2.0
-    tension     = min(10.0, len(result.stderr) / 100.0)
+    loc = len(code.splitlines())
+    complexity = min(10.0, loc / 50.0 * 10.0)
+    stability = 8.0 if result.success else 2.0
+    tension = min(10.0, len(result.stderr) / 100.0)
 
     # Adaptability: inversely proportional to elapsed time (0–10s range)
     adaptability = max(0.0, 10.0 - result.elapsed_s)
@@ -191,15 +192,16 @@ def _extract_nsdt_from_execution(result: ExecutionResult,
     coherence = (len(result.stdout) / total_out) * 10.0
 
     return [
-        round(complexity,   3),
-        round(stability,    3),
-        round(tension,      3),
+        round(complexity, 3),
+        round(stability, 3),
+        round(tension, 3),
         round(adaptability, 3),
-        round(coherence,    3),
+        round(coherence, 3),
     ]
 
 
 # ── LuminarkLiveBridge ────────────────────────────────────────────────────────
+
 
 class LuminarkLiveBridge:
     """
@@ -218,25 +220,27 @@ class LuminarkLiveBridge:
     stability_threshold : float — Lyapunov V threshold for PASS
     """
 
-    def __init__(self,
-                 execution_mode:      ExecutionMode = ExecutionMode.DOCKER,
-                 max_iterations:      int           = 3,
-                 docker_image:        str           = "luminark-sandbox:latest",
-                 sandbox_timeout:     int           = 30,
-                 stability_threshold: float         = 3.0):
+    def __init__(
+        self,
+        execution_mode: ExecutionMode = ExecutionMode.DOCKER,
+        max_iterations: int = 3,
+        docker_image: str = "luminark-sandbox:latest",
+        sandbox_timeout: int = 30,
+        stability_threshold: float = 3.0,
+    ):
 
-        self.execution_mode      = execution_mode
-        self.max_iterations      = max_iterations
-        self.docker_image        = docker_image
-        self.sandbox_timeout     = sandbox_timeout
+        self.execution_mode = execution_mode
+        self.max_iterations = max_iterations
+        self.docker_image = docker_image
+        self.sandbox_timeout = sandbox_timeout
 
-        self.bayesian            = SAPConstrainedBayesian()
-        self.lyapunov            = LyapunovController()
-        self.constitution        = NumericalConstitution(
-            controller            = self.lyapunov,
-            stability_threshold   = stability_threshold,
+        self.bayesian = SAPConstrainedBayesian()
+        self.lyapunov = LyapunovController()
+        self.constitution = NumericalConstitution(
+            controller=self.lyapunov,
+            stability_threshold=stability_threshold,
         )
-        self.psychiatrist        = SAPPsychiatrist()
+        self.psychiatrist = SAPPsychiatrist()
 
         logger.info(
             f"LuminarkLiveBridge initialised | mode={execution_mode.value} "
@@ -245,8 +249,9 @@ class LuminarkLiveBridge:
 
     # ── Public API ─────────────────────────────────────────────────────────
 
-    def govern(self, code: str, task_description: str = "",
-               prev_stage: int | None = None) -> GovernanceResult:
+    def govern(
+        self, code: str, task_description: str = "", prev_stage: int | None = None
+    ) -> GovernanceResult:
         """
         Full governance loop for a piece of code.
 
@@ -260,10 +265,10 @@ class LuminarkLiveBridge:
         -------
         GovernanceResult with verdict, final code, and full audit trail
         """
-        t_start     = time.time()
-        current     = code
+        t_start = time.time()
+        current = code
         audit_trail = []
-        diagnoses   = []
+        diagnoses = []
 
         for iteration in range(1, self.max_iterations + 1):
             logger.info(f"Governance iteration {iteration}/{self.max_iterations}")
@@ -278,25 +283,27 @@ class LuminarkLiveBridge:
             fwd = self.bayesian.forward(nsdt, prev_stage)
 
             # 4. Build Lyapunov inputs
-            entropy  = fwd["entropy"]
-            energy   = fwd["trap_energy"]
-            velocity = abs(fwd["expected_stage"] - (prev_stage or 0)) / max(exec_result.elapsed_s, 0.01)
+            entropy = fwd["entropy"]
+            energy = fwd["trap_energy"]
+            velocity = abs(fwd["expected_stage"] - (prev_stage or 0)) / max(
+                exec_result.elapsed_s, 0.01
+            )
 
             # 5. Numerical Constitution check
             report = self.constitution.certify(entropy, energy, velocity)
 
             audit_entry = {
-                "iteration":    iteration,
-                "exit_code":    exec_result.exit_code,
-                "elapsed_s":    round(exec_result.elapsed_s, 3),
-                "nsdt":         nsdt,
-                "sap_stage":    fwd["dominant_stage"],
-                "stage_name":   STAGE_METADATA[fwd["dominant_stage"]]["name"],
-                "V":            report.V,
-                "passed":       report.passed,
-                "action":       report.action,
-                "stdout_head":  exec_result.stdout[:200],
-                "stderr_head":  exec_result.stderr[:200],
+                "iteration": iteration,
+                "exit_code": exec_result.exit_code,
+                "elapsed_s": round(exec_result.elapsed_s, 3),
+                "nsdt": nsdt,
+                "sap_stage": fwd["dominant_stage"],
+                "stage_name": STAGE_METADATA[fwd["dominant_stage"]]["name"],
+                "V": report.V,
+                "passed": report.passed,
+                "action": report.action,
+                "stdout_head": exec_result.stdout[:200],
+                "stderr_head": exec_result.stderr[:200],
             }
 
             # 6. Verdict
@@ -304,29 +311,30 @@ class LuminarkLiveBridge:
                 audit_entry["verdict"] = "PASS"
                 audit_trail.append(audit_entry)
                 logger.info(f"✅ PASS on iteration {iteration} | V={report.V:.4f}")
-                verdict = (GovernanceVerdict.PASS if iteration == 1
-                           else GovernanceVerdict.FAIL_REPAIRED)
+                verdict = (
+                    GovernanceVerdict.PASS if iteration == 1 else GovernanceVerdict.FAIL_REPAIRED
+                )
                 return GovernanceResult(
-                    verdict          = verdict,
-                    final_code       = current,
-                    iterations       = iteration,
-                    audit_trail      = audit_trail,
-                    final_report     = report,
-                    diagnoses        = diagnoses,
-                    total_elapsed_s  = round(time.time() - t_start, 3),
+                    verdict=verdict,
+                    final_code=current,
+                    iterations=iteration,
+                    audit_trail=audit_trail,
+                    final_report=report,
+                    diagnoses=diagnoses,
+                    total_elapsed_s=round(time.time() - t_start, 3),
                 )
 
             # 7. Diagnose failure with SAPPsychiatrist
             if not exec_result.success:
                 error_class, error_message = self._parse_error(exec_result.stderr)
                 diagnosis = self.psychiatrist.diagnose_from_strings(
-                    error_class   = error_class,
-                    error_message = error_message,
-                    function_name = self._extract_function_name(current),
+                    error_class=error_class,
+                    error_message=error_message,
+                    function_name=self._extract_function_name(current),
                 )
                 diagnoses.append(diagnosis)
                 audit_entry["diagnosis_stage"] = diagnosis.stage
-                audit_entry["diagnosis_name"]  = diagnosis.stage_name
+                audit_entry["diagnosis_name"] = diagnosis.stage_name
                 audit_entry["surgical_prompt"] = diagnosis.surgical_prompt
                 logger.warning(
                     f"❌ Execution failed — Stage {diagnosis.stage} "
@@ -335,13 +343,13 @@ class LuminarkLiveBridge:
             else:
                 # Constitution failed but execution succeeded: Stage 8 False Hell
                 diagnosis = self.psychiatrist.diagnose_from_strings(
-                    error_class   = "ConstitutionFailure",
-                    error_message = f"V={report.V:.4f} exceeds threshold. {report.message}",
-                    function_name = self._extract_function_name(current),
+                    error_class="ConstitutionFailure",
+                    error_message=f"V={report.V:.4f} exceeds threshold. {report.message}",
+                    function_name=self._extract_function_name(current),
                 )
                 diagnoses.append(diagnosis)
                 audit_entry["diagnosis_stage"] = 8
-                audit_entry["diagnosis_name"]  = "The Vessel of Grounding"
+                audit_entry["diagnosis_name"] = "The Vessel of Grounding"
                 audit_entry["surgical_prompt"] = diagnosis.surgical_prompt
                 logger.warning(
                     f"⚠️  Constitution failed (False Hell) | V={report.V:.4f} | "
@@ -359,16 +367,14 @@ class LuminarkLiveBridge:
                 prev_stage = fwd["dominant_stage"]
 
         # 9. Max iterations exhausted
-        logger.error(
-            f"❌ FAIL_EXHAUSTED after {self.max_iterations} iterations"
-        )
+        logger.error(f"❌ FAIL_EXHAUSTED after {self.max_iterations} iterations")
         return GovernanceResult(
-            verdict         = GovernanceVerdict.FAIL_EXHAUSTED,
-            final_code      = current,
-            iterations      = self.max_iterations,
-            audit_trail     = audit_trail,
-            diagnoses       = diagnoses,
-            total_elapsed_s = round(time.time() - t_start, 3),
+            verdict=GovernanceVerdict.FAIL_EXHAUSTED,
+            final_code=current,
+            iterations=self.max_iterations,
+            audit_trail=audit_trail,
+            diagnoses=diagnoses,
+            total_elapsed_s=round(time.time() - t_start, 3),
         )
 
     # ── Execution ──────────────────────────────────────────────────────────
@@ -385,22 +391,30 @@ class LuminarkLiveBridge:
         The container runs with ulimits (CPU/Memory) enforced by entrypoint.sh.
         """
         t0 = time.time()
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".py",
-                                         prefix="luminark_exec_",
-                                         delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".py", prefix="luminark_exec_", delete=False
+        ) as tmp:
             tmp.write(code)
             tmp_path = tmp.name
 
         try:
             cmd = [
-                "docker", "run", "--rm",
-                "--network", "none",
-                "--memory", "256m",
-                "--cpus",   "0.5",
-                "--pids-limit", "64",
-                "-v", f"{tmp_path}:/workspace/task.py:ro",
+                "docker",
+                "run",
+                "--rm",
+                "--network",
+                "none",
+                "--memory",
+                "256m",
+                "--cpus",
+                "0.5",
+                "--pids-limit",
+                "64",
+                "-v",
+                f"{tmp_path}:/workspace/task.py:ro",
                 self.docker_image,
-                "python", "/workspace/task.py",
+                "python",
+                "/workspace/task.py",
             ]
             result = subprocess.run(
                 cmd,
@@ -410,13 +424,18 @@ class LuminarkLiveBridge:
             )
             elapsed = time.time() - t0
             return ExecutionResult(
-                stdout=result.stdout, stderr=result.stderr,
-                exit_code=result.returncode, elapsed_s=elapsed,
+                stdout=result.stdout,
+                stderr=result.stderr,
+                exit_code=result.returncode,
+                elapsed_s=elapsed,
             )
         except subprocess.TimeoutExpired:
             return ExecutionResult(
-                stdout="", stderr="Sandbox execution timed out.",
-                exit_code=124, elapsed_s=self.sandbox_timeout, timed_out=True,
+                stdout="",
+                stderr="Sandbox execution timed out.",
+                exit_code=124,
+                elapsed_s=self.sandbox_timeout,
+                timed_out=True,
             )
         except FileNotFoundError:
             # Docker not available — warn and fall back to local
@@ -432,27 +451,33 @@ class LuminarkLiveBridge:
         NOT resource-constrained — use only for local testing.
         """
         t0 = time.time()
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".py",
-                                         prefix="luminark_local_",
-                                         delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".py", prefix="luminark_local_", delete=False
+        ) as tmp:
             tmp.write(code)
             tmp_path = tmp.name
 
         try:
             result = subprocess.run(
                 [sys.executable, tmp_path],
-                capture_output=True, text=True,
+                capture_output=True,
+                text=True,
                 timeout=self.sandbox_timeout,
             )
             elapsed = time.time() - t0
             return ExecutionResult(
-                stdout=result.stdout, stderr=result.stderr,
-                exit_code=result.returncode, elapsed_s=elapsed,
+                stdout=result.stdout,
+                stderr=result.stderr,
+                exit_code=result.returncode,
+                elapsed_s=elapsed,
             )
         except subprocess.TimeoutExpired:
             return ExecutionResult(
-                stdout="", stderr="Local execution timed out.",
-                exit_code=124, elapsed_s=self.sandbox_timeout, timed_out=True,
+                stdout="",
+                stderr="Local execution timed out.",
+                exit_code=124,
+                elapsed_s=self.sandbox_timeout,
+                timed_out=True,
             )
         finally:
             with contextlib.suppress(OSError):
@@ -460,8 +485,9 @@ class LuminarkLiveBridge:
 
     # ── Repair ─────────────────────────────────────────────────────────────
 
-    def _apply_surgical_repair(self, code: str, surgical_prompt: str,
-                                exec_result: ExecutionResult) -> str:
+    def _apply_surgical_repair(
+        self, code: str, surgical_prompt: str, exec_result: ExecutionResult
+    ) -> str:
         """
         Apply a surgical repair to the code based on the Psychiatrist's prompt.
 
@@ -500,9 +526,7 @@ class LuminarkLiveBridge:
             indent = "    "
             wrapped_lines = [indent + line for line in code.splitlines()]
             repaired = (
-                "import sys\ntry:\n" +
-                "\n".join(wrapped_lines) +
-                "\nexcept Exception as _e:\n"
+                "import sys\ntry:\n" + "\n".join(wrapped_lines) + "\nexcept Exception as _e:\n"
                 "    print(f'LUMINARK_REPAIR: {type(_e).__name__}: {_e}', file=sys.stderr)\n"
                 "    raise\n"
             )
@@ -519,7 +543,7 @@ class LuminarkLiveBridge:
         lines = [ln.strip() for ln in stderr.splitlines() if ln.strip()]
         for line in reversed(lines):
             # Typical traceback last line: "ErrorClass: message"
-            m = re.match(r'^([A-Za-z][A-Za-z0-9_]*(?:Error|Exception|Warning|Exit)): (.+)$', line)
+            m = re.match(r"^([A-Za-z][A-Za-z0-9_]*(?:Error|Exception|Warning|Exit)): (.+)$", line)
             if m:
                 return m.group(1), m.group(2)
         # Fallback
@@ -528,7 +552,7 @@ class LuminarkLiveBridge:
     @staticmethod
     def _extract_function_name(code: str) -> str:
         """Extract the first function name from source code."""
-        m = re.search(r'def\s+(\w+)\s*\(', code)
+        m = re.search(r"def\s+(\w+)\s*\(", code)
         return m.group(1) if m else "module_level"
 
     def get_stage_report(self, code: str) -> dict[str, Any]:
@@ -537,20 +561,20 @@ class LuminarkLiveBridge:
         Useful for dashboard / monitoring.
         """
         exec_result = self._execute(code)
-        nsdt        = _extract_nsdt_from_execution(exec_result, code)
-        fwd         = self.bayesian.forward(nsdt)
-        entropy     = fwd["entropy"]
-        energy      = fwd["trap_energy"]
-        velocity    = 0.0
-        report      = self.constitution.certify(entropy, energy, velocity)
+        nsdt = _extract_nsdt_from_execution(exec_result, code)
+        fwd = self.bayesian.forward(nsdt)
+        entropy = fwd["entropy"]
+        energy = fwd["trap_energy"]
+        velocity = 0.0
+        report = self.constitution.certify(entropy, energy, velocity)
 
         return {
-            "nsdt":        nsdt,
-            "sap_stage":   fwd["dominant_stage"],
-            "stage_name":  STAGE_METADATA[fwd["dominant_stage"]]["name"],
-            "V":           report.V,
-            "passed":      report.passed,
-            "action":      report.action,
-            "message":     report.message,
+            "nsdt": nsdt,
+            "sap_stage": fwd["dominant_stage"],
+            "stage_name": STAGE_METADATA[fwd["dominant_stage"]]["name"],
+            "V": report.V,
+            "passed": report.passed,
+            "action": report.action,
+            "message": report.message,
             "exec_success": exec_result.success,
         }

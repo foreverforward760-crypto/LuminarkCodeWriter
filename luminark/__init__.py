@@ -39,22 +39,35 @@ from luminark.sap_stage_classifier import (
 )
 
 __version__ = "1.0.0"
-__author__  = "Richard L. Stanfield"
-__org__     = "Meridian Axiom Alignment Technologies (MAAT)"
+__author__ = "Richard L. Stanfield"
+__org__ = "Meridian Axiom Alignment Technologies (MAAT)"
 
 __all__ = [
     # Geometry
-    "SAPGeometry", "STAGE_CENTROIDS", "STAGE_METADATA",
-    "ADJACENCY_MATRIX", "AXIS_WEIGHTS", "AXIS_SCALES",
+    "SAPGeometry",
+    "STAGE_CENTROIDS",
+    "STAGE_METADATA",
+    "ADJACENCY_MATRIX",
+    "AXIS_WEIGHTS",
+    "AXIS_SCALES",
     # Bayesian + Energy
-    "SAPConstrainedBayesian", "SAPEnergy",
+    "SAPConstrainedBayesian",
+    "SAPEnergy",
     # Lyapunov
-    "LyapunovController", "LyapunovVulnerabilityScanner",
-    "NumericalConstitution", "StabilityReport",
+    "LyapunovController",
+    "LyapunovVulnerabilityScanner",
+    "NumericalConstitution",
+    "StabilityReport",
     # Psychiatrist
-    "SAPPsychiatrist", "SAPDiagnosis",
+    "SAPPsychiatrist",
+    "SAPDiagnosis",
     # Bridge
-    "LuminarkLiveBridge", "ExecutionMode", "GovernanceVerdict", "GovernanceResult",
+    "LuminarkLiveBridge",
+    "ExecutionMode",
+    "GovernanceVerdict",
+    "GovernanceResult",
     # Meta
-    "__version__", "__author__", "__org__",
+    "__version__",
+    "__author__",
+    "__org__",
 ]
