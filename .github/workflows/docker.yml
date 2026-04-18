@@ -71,11 +71,21 @@ jobs:
         if: github.event_name != 'pull_request'
         run: docker build -t luminark-sandbox:latest .
 
-      - name: Test sandbox image
+      - name: Test sandbox – direct Python (no entrypoint)
+        run: |
+          docker run --rm \
+            --network none \
+            --memory 256m \
+            --cpus 0.5 \
+            --entrypoint python \
+            luminark-sandbox:latest \
+            -c "print('Sandbox OK')"
+
+      - name: Test sandbox – via entrypoint
         run: |
           docker run --rm \
             --network none \
             --memory 256m \
             --cpus 0.5 \
             luminark-sandbox:latest \
-            python -c "print('Sandbox OK')"
+            python -c "print('Entrypoint OK')"

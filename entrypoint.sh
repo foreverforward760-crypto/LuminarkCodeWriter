@@ -4,11 +4,16 @@
 #
 # Resource limits (ulimits):
 #   CPU time    : 25 seconds hard limit (prevents infinite loops)
-#   Memory      : 256 MB virtual address space (prevents memory bombs)
 #   File size   : 10 MB max file write (prevents disk exhaustion)
 #   Open files  : 64 max file descriptors (prevents resource leaks)
 #   Processes   : 32 max child processes (prevents fork bombs)
 #   Core dumps  : 0 (no core files in the sandbox)
+#
+# NOTE: Virtual memory (ulimit -v) is intentionally NOT set here.
+# Docker's --memory flag enforces container-level memory limits via cgroups,
+# which is the correct mechanism. Setting ulimit -v inside the container
+# constrains the shell's own address space and causes fork failures on
+# GitHub Actions runners where the kernel maps large address ranges by default.
 #
 # These complement Docker's --memory and --cpus flags:
 #   Docker enforces cgroup-level limits (container level)
@@ -20,9 +25,6 @@ set -euo pipefail
 
 # CPU time: 25 seconds (SIGXCPU on soft limit, SIGKILL on hard limit)
 ulimit -t 25
-
-# Virtual memory: 256 MB
-ulimit -v $((256 * 1024))
 
 # Maximum file size: 10 MB
 ulimit -f $((10 * 1024))
@@ -40,7 +42,6 @@ ulimit -c 0
 
 echo "[LUMINARK SANDBOX] Resource constraints applied:"
 echo "  CPU time:    $(ulimit -t)s"
-echo "  Virtual mem: $(ulimit -v)KB"
 echo "  Max files:   $(ulimit -n)"
 echo "  Max procs:   $(ulimit -u)"
 echo "[LUMINARK SANDBOX] Executing: $*"
