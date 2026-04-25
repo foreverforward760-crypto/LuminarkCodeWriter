@@ -21,7 +21,7 @@ Error→Stage mapping rationale:
   Stage 5 — Threshold:      RecursionError, infinite loop, timeout
   Stage 6 — Nexus / IO:     IOError, FileNotFoundError, PermissionError
   Stage 7 — Lens / Concurr: RuntimeError, thread/async errors, race conditions
-  Stage 8 — False Hell:     Silent wrong result (no exception, wrong output)
+  Stage 8 — Illusion of Permanence:     Silent wrong result (no exception, wrong output)
   Stage 9 — Transparency:   SystemExit, MemoryError, critical resource exhaustion
 """
 
@@ -58,7 +58,7 @@ _STAGE_PATTERNS: list[dict] = [
     # Stage 9 first — most critical, must be checked before generic RuntimeError
     {
         "stage": 9,
-        "stage_name": "The Transparency",
+        "stage_name": "TRANSPARENCY OF THE GUIDE",
         "patterns": [
             "MemoryError",
             "SystemExit",
@@ -76,7 +76,7 @@ _STAGE_PATTERNS: list[dict] = [
     },
     {
         "stage": 8,
-        "stage_name": "The Vessel of Grounding",
+        "stage_name": "VESSEL OF GROUNDING",
         "patterns": [
             "AssertionError.*wrong.*value",
             "wrong output",
@@ -85,7 +85,7 @@ _STAGE_PATTERNS: list[dict] = [
         ],
         "urgency": "HIGH",
         "surgical_template": (
-            "SILENT FAILURE (Stage 8 False Hell) detected in {function_hint}. "
+            "SILENT FAILURE (Stage 8 Illusion of Permanence) detected in {function_hint}. "
             "The code runs without raising an exception but produces the wrong result. "
             "This is the most dangerous failure mode. "
             "Add explicit output validation after the computation: "
@@ -95,7 +95,7 @@ _STAGE_PATTERNS: list[dict] = [
     },
     {
         "stage": 7,
-        "stage_name": "The Lens",
+        "stage_name": "LENS OF DISTILLATION",
         "patterns": [
             "RuntimeError",
             "concurrent",
@@ -114,7 +114,7 @@ _STAGE_PATTERNS: list[dict] = [
     },
     {
         "stage": 6,
-        "stage_name": "The Nexus",
+        "stage_name": "NEXUS OF HARMONY",
         "patterns": [
             "IOError",
             "FileNotFoundError",
@@ -133,7 +133,7 @@ _STAGE_PATTERNS: list[dict] = [
     },
     {
         "stage": 5,
-        "stage_name": "The Dynamo",
+        "stage_name": "DYNAMO OF WILL",
         "patterns": [
             "RecursionError",
             "TimeoutExpired",
@@ -151,7 +151,7 @@ _STAGE_PATTERNS: list[dict] = [
     },
     {
         "stage": 4,
-        "stage_name": "The Crucible",
+        "stage_name": "CRUCIBLE OF EQUILIBRIUM",
         "patterns": [
             "IndexError",
             "KeyError",
@@ -170,7 +170,7 @@ _STAGE_PATTERNS: list[dict] = [
     },
     {
         "stage": 3,
-        "stage_name": "The Engine",
+        "stage_name": "ENGINE OF EXPRESSION",
         "patterns": [
             "AssertionError",
             "wrong.*result",
@@ -189,7 +189,7 @@ _STAGE_PATTERNS: list[dict] = [
     },
     {
         "stage": 2,
-        "stage_name": "The Vessel",
+        "stage_name": "FORGE OF POLARITY",
         "patterns": [
             "TypeError",
             "ValueError",
@@ -207,7 +207,7 @@ _STAGE_PATTERNS: list[dict] = [
     },
     {
         "stage": 1,
-        "stage_name": "The Spark",
+        "stage_name": "SPARK OF NAVIGATION",
         "patterns": [
             "NameError",
             "UnboundLocalError",
@@ -225,7 +225,7 @@ _STAGE_PATTERNS: list[dict] = [
     },
     {
         "stage": 0,
-        "stage_name": "Plenara",
+        "stage_name": "PLENARA",
         "patterns": [
             "ImportError",
             "ModuleNotFoundError",

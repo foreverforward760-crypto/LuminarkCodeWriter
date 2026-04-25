@@ -78,18 +78,18 @@ NumericalConstitution.certify()   →  V = w_H·H + w_E·E + w_v·v²
 
 ## SAP Stage Reference
 
-| Stage | Name | Geometry | Logistics Analogy |
-|-------|------|----------|-------------------|
-| 0 | Plenara | Sphere | Void / Missing dependency |
-| 1 | The Spark | Point | Unbound name |
-| 2 | The Vessel | Line | Type mismatch |
-| 3 | The Engine | Triangle | Logic error |
-| 4 | The Crucible | Square | Boundary violation |
-| 5 | The Dynamo | Pentagon | **Threshold — point of no return** |
-| 6 | The Nexus | Hexagon | I/O failure |
-| 7 | The Lens | Heptagon | Runtime / concurrency |
-| 8 | The Vessel of Grounding | Octagon | **False Hell — silent wrong result** |
-| 9 | The Transparency | Nonagon | Critical resource exhaustion |
+| Stage | Canonical Name | Geometry | Logistics Analogy |
+|-------|----------------|----------|-------------------|
+| 0 | PLENARA | Sphere | Void / Missing dependency |
+| 1 | SPARK OF NAVIGATION | Point | Unbound name |
+| 2 | FORGE OF POLARITY | Line | Type mismatch |
+| 3 | ENGINE OF EXPRESSION | Triangle | Logic error |
+| 4 | CRUCIBLE OF EQUILIBRIUM | Square | Boundary violation |
+| 5 | DYNAMO OF WILL | Pentagon | **Threshold — point of no return** |
+| 6 | NEXUS OF HARMONY | Hexagon | I/O failure |
+| 7 | LENS OF DISTILLATION | Heptagon | Runtime / concurrency |
+| 8 | VESSEL OF GROUNDING | Octagon | **Illusion of Permanence — Crystallization Paradox** |
+| 9 | TRANSPARENCY OF THE GUIDE | Nonagon | Critical resource exhaustion |
 
 ---
 

@@ -341,7 +341,7 @@ class LuminarkLiveBridge:
                     f"({diagnosis.stage_name}) | {diagnosis.urgency}"
                 )
             else:
-                # Constitution failed but execution succeeded: Stage 8 False Hell
+                # Constitution failed but execution succeeded: Stage 8 Illusion of Permanence
                 diagnosis = self.psychiatrist.diagnose_from_strings(
                     error_class="ConstitutionFailure",
                     error_message=f"V={report.V:.4f} exceeds threshold. {report.message}",
@@ -352,7 +352,7 @@ class LuminarkLiveBridge:
                 audit_entry["diagnosis_name"] = "The Vessel of Grounding"
                 audit_entry["surgical_prompt"] = diagnosis.surgical_prompt
                 logger.warning(
-                    f"⚠️  Constitution failed (False Hell) | V={report.V:.4f} | "
+                    f"⚠️  Constitution failed (Illusion of Permanence) | V={report.V:.4f} | "
                     f"action={report.action}"
                 )
 
