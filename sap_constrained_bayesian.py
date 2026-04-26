@@ -40,7 +40,7 @@ class SAPEnergy:
         """Geometry-derived trap potential for a given stage."""
         c, s, t, a, coh = x[0], x[1], x[2], x[3], x[4]
 
-        if stage == 8:  # False heaven / false hell
+        if stage == 8:  # Illusion of Permanence (Crystallization Paradox)
             return max(0.0, min(1.0, (2.0 * coh - 1.5 * a + 1.2 * s) / 5.0))
         if stage == 7:  # Permanent isolation
             return max(0.0, min(1.0, (1.5 * t - 1.0 * a) / 5.0))
